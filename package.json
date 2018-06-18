@@ -1,35 +1,24 @@
 {
-  "name": "claw",
+  "name": "service_test",
   "version": "1.0.0",
-  "description": "Clarive Worker",
-  "main": "claw.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/clarive/claw.git"
-  },
-  "keywords": [
-    "Clarive",
-    "agent",
-    "worker"
-  ],
-  "author": "Clarive, Inc.",
+  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/clarive/claw/issues"
-  },
-  "homepage": "https://github.com/clarive/claw#readme",
-  "dependenciesDev": {
-    "nodemon": "^1.17.2",
-    "pkg": "^4.3.0"
-  },
+  "bin": "app.js",
   "dependencies": {
-    "colors": "^1.2.1",
-    "daemonize-process": "^1.0.9",
-    "ioredis": "^3.2.2",
-    "js-yaml": "^3.11.0",
-    "yargs": "^11.0.0"
+    "child_process": "^1.0.2",
+    "express": "^4.16.3",
+    "node-linux": "^0.1.11",
+    "node-mac": "^0.1.8",
+    "node-windows": "^0.1.14",
+    "os": "^0.1.1"
+  },
+  "pkg": {
+    "assets": "**/templates/**"
   }
 }
+
