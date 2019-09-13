@@ -9,7 +9,9 @@
         "build-watch": "tsc -w",
         "test-watch": "npx jest --watchAll",
         "docs": "gitbook build docs ../cla-worker-docs",
-        "lint": "tslint -p ."
+        "pretty": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
+        "ci": "npm run lint && npm run build && npm test",
+        "lint": "eslint 'src/**'"
     },
     "bin": "bin/cla-worker",
     "engines": {

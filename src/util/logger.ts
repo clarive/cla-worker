@@ -1,4 +1,4 @@
-import * as colors from 'colors';
+import * as colors from 'colors'; // eslint-disable-line
 require('colors'); // otherwise we get "undefined" messages
 
 import { Logger, LogMessage } from '@claw/types';
@@ -40,10 +40,7 @@ export default class ConsoleLogger implements Logger {
 
     error(msg: LogMessage, ...args): void {
         msg = this.dump(msg);
-        this.printer(
-            `[error] ${msg.bold}`.red,
-            ...args.map(arg => this.dump(arg))
-        );
+        this.printer(`✘ ${msg.bold}`.red, ...args.map(arg => this.dump(arg)));
     }
 
     echo(msg: LogMessage, ...args): void {
