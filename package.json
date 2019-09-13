@@ -10,7 +10,7 @@
         "test-watch": "npx jest --watchAll",
         "docs": "gitbook build docs ../cla-worker-docs",
         "pretty": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
-        "ci": "npm run lint && npm run build && npm test",
+        "ci": "npm ci && npm run lint && npm run build && npm test",
         "lint": "eslint 'src/**'"
     },
     "bin": "bin/cla-worker",
