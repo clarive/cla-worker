@@ -23,4 +23,16 @@ export const readConfig = file => {
     }
 };
 
-export const origin = () => `${os.userInfo().username}@${os.hostname()}`;
+export const workerid = () =>
+    `${os.userInfo().username}@${os.hostname()}/${generate()}`;
+
+export const origin = () =>
+    `${os.userInfo().username}@${os.hostname()}/${process.pid}`;
+
+export const sleep = (t: number): Promise<number> => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(t);
+        }, t);
+    });
+};

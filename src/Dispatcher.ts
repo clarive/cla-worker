@@ -70,6 +70,9 @@ export default class Dispatcher {
                 case 'worker.capable':
                     this.cmdCapable(this.message);
                     break;
+                case 'worker.file_exists':
+                    this.cmdFileExists(this.message);
+                    break;
                 case 'worker.exec':
                     await this.cmdExec(this.message);
                     break;
@@ -114,6 +117,18 @@ export default class Dispatcher {
                 tags: myTags
             });
         }
+    }
+
+    cmdFileExists({ path }) {
+        const myTags: string[] | string = app.config.tags || [];
+
+        const exists = fs.existsSync(path);
+
+        this.pubsub.publish('worker.file_exists.reply', {
+            oid: this.msgId,
+            workerid: this.pubsub.id,
+            exists: exists ? 1 : 0
+        });
     }
 
     async cmdEval({ code, stash }) {
