@@ -1,6 +1,7 @@
 import app from '@claw/app';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as util from 'util';
 import * as vm from 'vm';
 
@@ -282,6 +283,11 @@ export default class Dispatcher {
         try {
             const tmpfile = [filepath, filekey, 'temp'].join('.');
             app.debug('creating temporary file %s', tmpfile);
+            const tmpdir = path.dirname(tmpfile);
+
+            if (!fs.existsSync(tmpdir)) {
+                await fs.promises.mkdir(tmpdir, { recursive: true });
+            }
 
             let stream = fs.createWriteStream(tmpfile, { flags: 'w' });
 
