@@ -226,22 +226,137 @@ class App extends EventEmitter {
         process.stdout.write = process.stderr.write = access.write.bind(access);
     }
 
-    checkRunningDaemon() {
-        const { pidfile, logfile } = this.config;
+    spawnDaemon() {
+        const { id, logfile, pidfile } = this.config;
 
         this.info(`logfile=${logfile}`);
         this.info(`pidfile=${pidfile}`);
 
-        try {
-            const pid = fs.readFileSync(pidfile);
-            process.kill(parseInt(pid.toString(), 10), 0);
+        const [isRunning, pid] = this.isDaemonRunning();
+        if (isRunning) {
             this.fail(
-                `cannot start daemon: pidfile ${pidfile} currently exists and daemon is active with pid=${pid}`
+                `cannot start, another daemon is already running for id=${
+                    this.config.id
+                } and pid=${pid}`
             );
-        } catch (err) {
-            if (err.code !== 'ESRCH') {
-                this.error(`error checking pidfile: ${err} (code=${err.code})`);
+        }
+
+        const { spawn } = require('child_process');
+
+        const isNode = process.argv[0] === 'node' ? true : false;
+
+        const cmd = process.argv[isNode ? 1 : 0],
+            args = process.argv.slice(isNode ? 2 : 1);
+
+        this.debug(`cmd=${cmd}`);
+        this.debug(`args=${args}`);
+
+        const subprocess = spawn(cmd, args, {
+            env: Object.assign({}, process.env, {
+                CLARIVE_WORKER_FORKED: 1
+            }),
+            detached: true,
+            stdio: 'ignore'
+        });
+
+        this.info(`forked child with pid ${subprocess.pid}`);
+        this.info(`waiting for daemon to start...`);
+
+        setTimeout(() => {
+            try {
+                process.kill(subprocess.pid, 0);
+                this.milestone(
+                    `workerid ${id} and pid=${subprocess.pid} started.`
+                );
+            } catch (err) {
+                this.error(
+                    `worker with pid=${
+                        subprocess.pid
+                    } did not start successfully`
+                );
             }
+            subprocess.unref();
+        }, 5000);
+    }
+
+    getPid(pidfile): number {
+        if (!pidfile) {
+            this.fail('missing pidfile');
+        }
+
+        if (!fs.existsSync(pidfile)) {
+            this.fail(`could not find daemon, no pidfile exists at ${pidfile}`);
+        }
+
+        const pidBuf = fs.readFileSync(pidfile);
+        return parseInt(pidBuf.toString(), 10);
+    }
+
+    deletePidfile(pidfile) {
+        try {
+            fs.unlinkSync(pidfile);
+            this.info(`deleted '${pidfile}'`);
+        } catch (err) {
+            this.warn(`could not delete pidfile ${pidfile}`, err);
+        }
+    }
+
+    killDaemon(pidfile: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const { id } = this.config;
+            const pid = this.getPid(pidfile);
+
+            this.info(
+                `stopping daemon with pid=${pid}, from pidfile=${pidfile}`
+            );
+
+            try {
+                process.kill(pid, 15);
+                this.info(`killed daemon with pid=${pid}`);
+            } catch (err) {
+                this.deletePidfile(pidfile);
+                reject(
+                    `process pid=${pid} is not running or cannot be killed (SIG 15)`
+                );
+            }
+
+            this.info(`waiting for daemon to stop...`);
+
+            let maxWait = 10;
+
+            const timeout = setInterval(() => {
+                try {
+                    process.kill(pid, 0);
+
+                    if (--maxWait <= 0) {
+                        clearInterval(timeout);
+                        reject(
+                            `worker with pid=${pid} did not stop successfully`
+                        );
+                    }
+                } catch (err) {
+                    clearInterval(timeout);
+                    this.milestone(`workerid ${id} pid=${pid} stopped.`);
+                    this.deletePidfile(pidfile);
+                    resolve(true);
+                }
+            }, 1000);
+        });
+    }
+
+    isDaemonRunning(): [boolean, number] {
+        const { pidfile } = this.config;
+
+        if (!fs.existsSync(pidfile)) {
+            return [false, null];
+        }
+
+        const pid = this.getPid(pidfile);
+        try {
+            process.kill(pid, 0);
+            return [true, pid];
+        } catch (err) {
+            return [false, null];
         }
     }
 }
