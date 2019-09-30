@@ -5,7 +5,8 @@
     "main": "src/cli.js",
     "scripts": {
         "test": "jest",
-        "build": "rimraf ./dist && tsc && cp -R package.json bin ./dist/ && find src -name '*.js' -exec cp {} dist/{} \\; && cd ./dist && pkg bin/cla-worker -t node10-win,node10-linux,node10-macos -c package.json && cd .. && find ./dist/ -name '*.j*' -exec rm {} \\;",
+        "build": "rimraf ./dist && tsc && cp -R package.json bin ./dist/ && find src -name '*.js' -exec cp {} dist/{} \\; && cd ./dist && pkg bin/cla-worker -t node12-win-x64,node12-linux-x64,node12-macos-x64 -c package.json && cd .. && find ./dist/ -name '*.j*' -exec rm {} \\;",
+        "package": "npm run build && cd dist && mkdir cla-worker && mv cla-worker-* cla-worker && tar cvzf cla-worker-latest.tgz cla-worker && zip -r cla-worker-latest.zip cla-worker",
         "build-watch": "tsc -w",
         "test-watch": "npx jest --watchAll",
         "docs": "gitbook build docs ../cla-worker-docs",
