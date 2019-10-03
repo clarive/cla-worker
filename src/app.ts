@@ -136,26 +136,26 @@ class App extends EventEmitter {
     ): [AppConfig, string] {
         const configCandidates: string[] = this.configCandidates(argvConfig);
 
-        if (!newFile) {
-            for (const configPath of configCandidates) {
-                this.debug(`checking for config file at ${configPath}...`);
+        for (const configPath of configCandidates) {
+            this.debug(`checking for config file at ${configPath}...`);
 
-                if (!fs.existsSync(configPath) && !newFile) {
-                    if (configPath === argvConfig) {
-                        throw `invalid config file '${configPath}'`;
-                    } else {
-                        continue;
-                    }
+            if (!fs.existsSync(configPath)) {
+                if (newFile) {
+                    continue;
+                } else if (configPath === argvConfig) {
+                    throw `invalid config file '${configPath}'`;
+                } else {
+                    continue;
                 }
+            }
 
-                this.debug(`found ${configPath}, loading...`);
+            this.debug(`found ${configPath}, loading...`);
 
-                try {
-                    const baseFile = fs.readFileSync(configPath, 'utf8');
-                    return [YAML.safeLoad(baseFile), configPath];
-                } catch (err) {
-                    throw `failed to load config file ${configPath}: ${err}`;
-                }
+            try {
+                const baseFile = fs.readFileSync(configPath, 'utf8');
+                return [YAML.safeLoad(baseFile), configPath];
+            } catch (err) {
+                throw `failed to load config file ${configPath}: ${err}`;
             }
         }
 
@@ -164,7 +164,8 @@ class App extends EventEmitter {
 
     saveConfigFile(data) {
         const [currentConfig, configPath] = this.loadConfigFile(
-            this.configFile
+            this.configFile,
+            true
         );
 
         const registrations = data.registrations;
