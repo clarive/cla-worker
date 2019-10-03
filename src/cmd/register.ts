@@ -74,9 +74,7 @@ module.exports = new class implements yargs.CommandModule {
                     }
                 }
 
-                app.info(`To remove this registration:
-
-            cla-worker unregister --token ${token} --id ${pubsub.id}\n`);
+                app.info(`To remove this registration:\n\n\tcla-worker unregister --token ${token} --id ${pubsub.id}\n`);
             }
 
             if (save) {
