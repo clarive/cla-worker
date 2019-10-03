@@ -3,7 +3,7 @@ import PubSub from '@claw/pubsub';
 import Dispatcher from '@claw/Dispatcher';
 
 export const runner = async () => {
-    const { id, url, token, tags, envs } = app.config;
+    const { id, url, token, tags, envs } = app.config.data;
 
     try {
         if (!token) {

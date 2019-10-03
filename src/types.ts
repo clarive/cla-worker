@@ -1,9 +1,13 @@
 export type LogMessage = string | object;
 
+/* Properties<class> ==> excludes functions from a class */
 export type Properties<T> = Pick<
     T,
     { [K in keyof T]: T[K] extends Function ? never : K }[keyof T]
 >;
+
+/* PartialProperties<class> ==> excludes functions from a class, allowing a partial/optional */
+export type PartialProperties<T> = Partial<T>;
 
 export interface GlobalMeta {
     name: string;

@@ -28,9 +28,9 @@ module.exports = new class implements yargs.CommandModule {
         app.build({ argv });
 
         await app.startup();
-        app.debug('cla-worker loaded config: ', app.config);
+        app.debug('cla-worker loaded config: ', app.config.data);
 
-        const { id } = app.config;
+        const { id } = app.config.data;
 
         if (id == null) {
             app.fail(

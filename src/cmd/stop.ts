@@ -14,7 +14,7 @@ module.exports = new class implements yargs.CommandModule {
     async handler(argv: yargs.Arguments) {
         app.build({ argv });
 
-        const { id, pidfile } = app.config;
+        const { id, pidfile } = app.config.data;
 
         if (id == null) {
             app.fail(

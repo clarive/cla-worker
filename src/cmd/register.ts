@@ -28,7 +28,7 @@ module.exports = new class implements yargs.CommandModule {
 
         try {
             await app.startup();
-            const { id, url, origin, passkey, envs, tags } = app.config;
+            const { id, url, origin, passkey, envs, tags } = app.config.data;
             const { save, config } = argv;
 
             const pubsub = new PubSub({
@@ -36,7 +36,7 @@ module.exports = new class implements yargs.CommandModule {
                 origin,
                 envs,
                 tags,
-                token: app.config.token,
+                token: app.config.data.token,
                 baseURL: url
             });
 
@@ -74,13 +74,17 @@ module.exports = new class implements yargs.CommandModule {
                     }
                 }
 
-                app.info(`To remove this registration:\n\n\tcla-worker unregister --token ${token} --id ${pubsub.id}\n`);
+                app.info(
+                    `To remove this registration:\n\n\tcla-worker unregister --token ${token} --id ${
+                        pubsub.id
+                    }\n`
+                );
             }
 
             if (save) {
                 app.info('saving registration to config file...');
 
-                const [configFile] = app.saveConfigFile({
+                const [configFile] = app.config.save({
                     registrations: [{ id, token }]
                 });
 

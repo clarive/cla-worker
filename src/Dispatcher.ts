@@ -107,7 +107,7 @@ export default class Dispatcher {
     }
 
     cmdCapable({ tags }) {
-        const myTags: string[] | string = app.config.tags || [];
+        const myTags: string[] | string = app.config.data.tags || [];
 
         if (tags.every(_ => myTags.includes(_))) {
             this.pubsub.publish('worker.capable.reply', {

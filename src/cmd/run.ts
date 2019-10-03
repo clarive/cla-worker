@@ -29,9 +29,9 @@ class CmdRun implements yargs.CommandModule {
         app.build({ argv });
 
         await app.startup();
-        app.debug('cla-worker loaded config: ', app.config);
+        app.debug('cla-worker loaded config: ', app.config.data);
 
-        const { id, daemon } = app.config;
+        const { id, daemon } = app.config.data;
 
         if (id == null) {
             app.fail(

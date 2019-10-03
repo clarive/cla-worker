@@ -7,7 +7,14 @@ module.exports = new class implements yargs.CommandModule {
     describe = 'Reports the worker daemon status';
 
     builder(args: yargs.Argv) {
-        commonOptions(args, 'verbose', 'config', 'pidfile', 'logfile', 'workerid');
+        commonOptions(
+            args,
+            'verbose',
+            'config',
+            'pidfile',
+            'logfile',
+            'workerid'
+        );
         return args;
     }
 
@@ -17,7 +24,7 @@ module.exports = new class implements yargs.CommandModule {
         try {
             await app.startup();
 
-            const { id, pidfile, logfile } = app.config;
+            const { id, pidfile, logfile } = app.config.data;
 
             if (id == null) {
                 app.fail(
