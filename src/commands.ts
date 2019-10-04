@@ -9,6 +9,7 @@ export interface CmdArgs extends yargs.Arguments {
     tags?: string;
     save?: boolean;
     verbose?: boolean | number;
+    url?: string;
     _opts?: CmdArgs;
 }
 

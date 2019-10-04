@@ -7,9 +7,10 @@ import * as YAML from 'js-yaml';
 import { CmdArgs } from '@claw/commands';
 import { PartialProperties } from '@claw/types';
 
-type Registration = {
+export type Registration = {
     id: string;
     token: string;
+    url?: string;
 };
 
 export class AppConfigData {
@@ -45,7 +46,7 @@ export class AppConfig {
             !argv.save && argv.config != null
         );
 
-        const configData = {
+        const configData: AppConfigData = {
             ...argvDefaults, // argv defaults
             ...loadedData, // user config file
             ...argv._opts // user cmd line
@@ -69,6 +70,12 @@ export class AppConfig {
                 registrations.forEach(registration => {
                     if (registration.id === configData.id) {
                         configData.token = registration.token;
+                        if (
+                            registration.url != null &&
+                            argv._opts.url === undefined
+                        ) {
+                            configData.url = registration.url;
+                        }
                     }
                 });
             } else if (!configData.id && registrations.length === 1) {

@@ -1,5 +1,10 @@
 # Clarive Worker
 
+---
+title: Worker
+index: 5000
+---
+
 The Clarive Worker is one of the available communication methods used for
 sending/retrieving files and running commands on remote servers.
 
@@ -72,13 +77,58 @@ the Clarive Github account:
 The worker is a self-contained binary available for Linux, MacOS and Windows
 and has no prerrequisites.
 
+## Configuring the Worker
+
+To start using the Clarive Worker, you'll need to know the URL to your
+Clarive server.
+
+By default, `cla-worker` will look for a Clarive server at `https://localhost:8080`
+but that's probably not where your server is.
+
+With every command listed on this document you can add the `--url https://myclariveserver:port`
+parameter.
+
+To avoid having to enter the URL everytime, add it to your `cla-worker.yml` file:
+
+```yaml
+    url: "https://myclariveserver:port"
+```
+
+#### `cla-worker.yml`
+
+By default the `cla-worker.yml` file is loaded from one of the
+following 4 possibilities, in order of precedence:
+
+1. from the parameter `--config filepath` or `-c /path/to/cla-worker.yml` is present
+2. from the environment variable `CLA_WORKER_CONFIG=/path/to/cla-worker.yml`
+3. from the current working directory, from where the binary is started
+4. from the user's home directory (environment variable `HOME`)
+5. from `/etc/cla-worker.yml`
+
+
+We recommend restricting the file read permission to only the user to keep your
+registration info safe from prying eyes:
+
+     chmod 500 cla-worker.yml
+
 #### Registering the Worker
 
 For a worker to connect to a Clarive server it needs a `passkey`. Passkeys
 are available on a project basis. Each Clarive project may or may not have a passkey,
 if the project owner or administrator generates one.
 
+To get the passkey, head to the `Deploy > Worker` menu option and hit the
+`Register Worker` button on top.
+
     cla-worker register --passkey 123428198291ad98d98c89b8
+
+##### important
+    Once generated, the passkey should be kept secret, as it could allow a
+    intruder to register a worker as, ie, a PRODUCTION worker and hijack a
+    given project's production deployment tasks. You can **invalidate a
+    registration passkey** by opening the `Register Worker` section and hitting
+    the `Invalidate` button if you suspect that the passkey is or could be
+    compromised.
 
 The registration process will return a ID-token pair that is unique
 to this worker instance.
@@ -92,44 +142,50 @@ to this worker instance.
 The registration token returned is the worker "password" to access the server under
 a given ID.
 
-**important**
+##### important
+    The ID-worker pair is analogous to a username/password for
+    your worker instance. Keep it in a safe place. If it's compromised
+    an **attacker could impersonate** the worker by making the Clarive
+    Server believe it's connected to the correct server when in fact it's
+    connected to the attacker's infrasctructure. That could end up
+    with sensitive information or files being sent by the Clarive Server
+    to the compromised worker.
 
-The ID-worker pair is analogous to a username/password for
-your worker instance. Keep it in a safe place. If it's compromised
-an **attacker could impersonate** the worker by making the Clarive
-Server believe it's connected to the correct server when in fact it's
-connected to the attacker's infrasctructure. That could end up
-with sensitive information or files being sent by the Clarive Server
-to the compromised worker.
-
-#### `cla-worker.yml`
+#### Saving the registration token
 
 To keep your registrations safe, use the `cla-worker.yml` file.
-
-By default the `cla-worker.yml` file is loaded from one of the
-following 4 possibilities, in order of precedence:
-
-1. from the parameter `--config filepath` or `-c /path/to/cla-worker.yml` is present
-2. from the environment variable `CLA_WORKER_CONFIG=/path/to/cla-worker.yml`
-3. from the current working directory, from where the binary is started
-4. from the user's home directory (environment variable `HOME`)
-5. from `/etc/cla-worker.yml`
 
 To save your registration directly to the `cla-worker.yml` file,
 use the `--save` or `--save /path/to/cla-worker.yml`:
 
      cla-worker register --save --passkey 123428198291ad98d98c89b8
 
-#### Structure of the `cla-worker.yml` file
+#### Structure of the config file (by deafult `cla-worker.yml`)
 
 These are the configuration parameters allowed in the config file:
 
-`id` - the unique identifier of the worker
-`token` - the token returned by the registration process
+`url` - the Clarive server URL (ie `https://myclariveserver:8080`)
 `passkey` - the project access key for registering workers
 `verbose` - to run the worker in verbose mode, set it to `verbose: true`
 `tags` - a comma separated list of tags
 `envs` - a comma separated list of environments
+`registrations` - an array of ìd`-`token` pairs
+
+The `registrations` key should look like this in the config file:
+
+```yaml
+registrations:
+   - id: "my id..."
+     token: "the corresponding token for the id..."
+   - id: "another id..."
+     token: "the corresponding token for another id..."
+     url: "https://anotherserver"
+```
+
+`id` - the unique identifier of the worker
+`token` - the token returned by the registration process
+`url` (optional) - the URL to the server, which overrides any
+configuration URL or command line URL.
 
 #### Assigning an ID to the Worker
 
@@ -188,11 +244,10 @@ From there you can:
 - Disable workers, which does not kill the process on the server
 but prevents new jobs from using it.
 
-**warning**
-
-Shutting down workers will kill the server process.
-After a shut down, restarting the worker requires manually
-logging into the server and starting the process.
+##### warning
+    Shutting down workers will kill the server process.
+    After a shut down, restarting the worker requires manually
+    logging into the server and starting the process.
 
 #### Limiting Workers by environment
 
@@ -208,11 +263,10 @@ $ cla-worker run --id myworkerid --envs QA,PROD
 $ cla-worker run --id myworkerid --env QA --env PROD
 ```
 
-**note**
-
-The environments need to exist in Clarive for the
-worker to start successfully. The environment names
-are case-sensitive.
+##### note
+    The environments need to exist in Clarive for the
+    worker to start successfully. The environment names
+    are case-sensitive.
 
 #### Setting worker tags
 
@@ -310,3 +364,4 @@ cla-worker stop --id myworker
 The `stop` command will look for a `pidfile` in the default location for a given
 `id`. If the `pidfile` sits somewhere else, pass the stop command the path to
 the `pidfile` with `cla-worker stop --pidfile [pidfile]`.
+

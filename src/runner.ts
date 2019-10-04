@@ -32,11 +32,11 @@ export const runner = async () => {
         } catch (err) {
             if (err.status === 401) {
                 app.error(
-                    `could not connect to server: worker id=${id} is not authorized. Have you ran "cla-worker register"?`
+                    `could not connect to server (${url}): worker id=${id} is not authorized. Have you ran "cla-worker register"?`
                 );
             } else {
                 app.error(
-                    `could not connect to server: ${err.status ||
+                    `could not connect to server (${url}): ${err.status ||
                         ''} ${err.message || ''}: ${err.warning ||
                         'server not available or server address not found'}`
                 );

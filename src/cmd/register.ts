@@ -2,7 +2,7 @@ import app from '@claw/app';
 import * as yargs from 'yargs';
 import PubSub from '@claw/pubsub';
 import { commonOptions, CmdArgs } from '@claw/commands';
-import { AppConfigData } from '@claw/config';
+import { AppConfigData, Registration } from '@claw/config';
 import { PartialProperties } from '@claw/types';
 
 module.exports = new class implements yargs.CommandModule {
@@ -87,8 +87,14 @@ module.exports = new class implements yargs.CommandModule {
             if (save) {
                 app.info('saving registration to config file...');
 
+                const registration : Registration = { id, token };
+
+                if( argv._opts['url'] ) {
+                    registration.url = argv._opts['url'];
+                }
+
                 const configData: PartialProperties<AppConfigData> = {
-                    registrations: [{ id, token }]
+                    registrations: [registration]
                 };
 
                 if (argv._opts['url']) {
