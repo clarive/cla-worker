@@ -9,6 +9,7 @@ export interface CmdArgs extends yargs.Arguments {
     tags?: string;
     save?: boolean;
     verbose?: boolean | number;
+    _opts?: CmdArgs;
 }
 
 const commons = {
@@ -70,14 +71,31 @@ const commons = {
     }
 };
 
-export function commonOptions(args: yargs.Argv, ...options) {
-    for (const option of options) {
-        const val = commons[option];
-        if (!val) {
-            throw `invalid common option '${option}'`;
+export function commonOptions(args: yargs.Argv, ...keys) {
+    const userArgv = {};
+
+    for (const key of keys) {
+        const opt = commons[key];
+
+        if (!opt) {
+            throw `invalid common option '${key}'`;
         }
-        args.option(option, val);
+
+        const userCoerce = opt.coerce;
+
+        opt.coerce = val => {
+            if (opt.default === undefined || val !== opt.default) {
+                userArgv[key] = val;
+            }
+            return userCoerce ? userCoerce(val) : val;
+        };
+
+        args.option(key, opt);
     }
+
+    args.middleware(argv => {
+        argv['_opts'] = userArgv;
+    });
 
     return args;
 }

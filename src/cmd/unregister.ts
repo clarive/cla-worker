@@ -8,14 +8,7 @@ module.exports = new class implements yargs.CommandModule {
     describe = 'Unregister worker from server';
 
     builder(args: yargs.Argv) {
-        commonOptions(
-            args,
-            'verbose',
-            'workerid',
-            'token',
-            'url',
-            'origin'
-        );
+        commonOptions(args, 'verbose', 'workerid', 'token', 'url', 'origin');
         return args;
     }
 
