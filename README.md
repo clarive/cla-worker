@@ -1,10 +1,5 @@
 # Clarive Worker
 
----
-title: Worker
-index: 5000
----
-
 The Clarive Worker is one of the available communication methods used for
 sending/retrieving files and running commands on remote servers.
 
