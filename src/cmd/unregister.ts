@@ -11,12 +11,9 @@ module.exports = new class implements yargs.CommandModule {
         commonOptions(
             args,
             'verbose',
-            'token',
-            'passkey',
-            'url',
-            'env',
             'workerid',
-            'tags',
+            'token',
+            'url',
             'origin'
         );
         return args;
