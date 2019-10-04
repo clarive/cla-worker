@@ -14,7 +14,6 @@ module.exports = new class implements yargs.CommandModule {
 
     async handler(argv: yargs.Arguments) {
         app.build({ argv });
-
         try {
             await app.startup();
             const {

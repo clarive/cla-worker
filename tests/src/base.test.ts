@@ -28,8 +28,7 @@ test('app args are stronger than config', () => {
             _: ['testcmd'],
             $0: 'testcmd',
             config: 'myconfig.yml',
-            id: '123',
-            token: '456'
+            _opts: { id: '123', token: '456' }
         }
     });
 

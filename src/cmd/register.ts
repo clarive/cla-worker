@@ -56,6 +56,7 @@ module.exports = new class implements yargs.CommandModule {
                         pubsub.id
                     }\n`
                 );
+
                 if (save) {
                     if (
                         config &&

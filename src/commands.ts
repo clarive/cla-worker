@@ -73,6 +73,7 @@ const commons = {
 
 export function commonOptions(args: yargs.Argv, ...keys) {
     const userArgv = {};
+    const userDefaults = {};
 
     for (const key of keys) {
         const opt = commons[key];
@@ -81,12 +82,13 @@ export function commonOptions(args: yargs.Argv, ...keys) {
             throw `invalid common option '${key}'`;
         }
 
+        userDefaults[key] = opt.default;
+        delete opt.default;
         const userCoerce = opt.coerce;
 
+        // save cmd line params separatedly
         opt.coerce = val => {
-            if (opt.default === undefined || val !== opt.default) {
-                userArgv[key] = val;
-            }
+            userArgv[key] = val;
             return userCoerce ? userCoerce(val) : val;
         };
 
@@ -95,6 +97,13 @@ export function commonOptions(args: yargs.Argv, ...keys) {
 
     args.middleware(argv => {
         argv['_opts'] = userArgv;
+
+        keys.forEach(key => {
+            if (userDefaults[key] !== undefined && argv[key] === undefined) {
+                const def = userDefaults[key];
+                argv[key] = typeof def === 'function' ? def(argv, key) : def;
+            }
+        });
     });
 
     return args;

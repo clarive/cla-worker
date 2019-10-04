@@ -36,12 +36,20 @@ export class AppConfig {
     file: string;
 
     constructor(argv?: Partial<CmdArgs>) {
-        const [configData, configPath] = this.load(
+        const argvDefaults = Object.keys(argv)
+            .filter(it => !/^[_\$]/.test(it))
+            .reduce((obj, key) => ((obj[key] = argv[key]), obj), {});
+
+        const [loadedData, configPath] = this.load(
             argv.config,
             !argv.save && argv.config != null
         );
 
-        Object.keys(argv).map(key => (configData[key] = argv[key]));
+        const configData = {
+            ...argvDefaults, // argv defaults
+            ...loadedData, // user config file
+            ...argv._opts // user cmd line
+        };
 
         configData.tags = this.makeArray(configData, 'tags', 'tag');
         configData.envs = this.makeArray(configData, 'envs', 'env');
