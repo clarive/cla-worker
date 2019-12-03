@@ -9,6 +9,7 @@ import * as packageJson from '@claw/../package.json';
 import { AppConfig } from '@claw/config';
 
 class App extends EventEmitter {
+    name = 'cla-worker';
     argv: CmdArgs;
     config: AppConfig;
     commandName: string;

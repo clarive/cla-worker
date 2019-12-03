@@ -93,13 +93,14 @@ export class AppConfig {
     }
 
     candidates(argvConfig): string[] {
-        const CLA_WORKER_HOME = process.env.CLA_WORKER_HOME || process.cwd();
+        const upperAppName = app.name.toUpperCase();
+        const APP_HOME = process.env[`${upperAppName}_HOME`] || process.cwd();
         return [
             argvConfig,
-            process.env.CLA_WORKER_CONFIG,
-            path.join(CLA_WORKER_HOME, './cla-worker.yml'),
-            path.join(process.env.HOME, './cla-worker.yml'),
-            path.join('/etc/cla-worker.yml')
+            process.env[`${upperAppName}_CONFIG`],
+            path.join(APP_HOME, `./${app.name}.yml`),
+            path.join(process.env.HOME, `./${app.name}.yml`),
+            path.join(`/etc/${app.name}.yml`)
         ].filter(it => it != null && typeof it !== 'boolean');
     }
 
