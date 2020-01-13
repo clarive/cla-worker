@@ -67,7 +67,7 @@ export class AppConfig {
 
         if (Array.isArray(registrations) && registrations.length > 0) {
             if (configData.id && !configData.token) {
-                registrations.forEach(registration => {
+                registrations?.forEach(registration => {
                     if (registration.id === configData.id) {
                         configData.token = registration.token;
                         if (
@@ -151,8 +151,8 @@ export class AppConfig {
         if (registrations) {
             const regMap = {};
 
-            newConfig.registrations.forEach(reg => (regMap[reg.id] = reg));
-            registrations.forEach(reg => (regMap[reg.id] = reg));
+            newConfig.registrations?.forEach(reg => (regMap[reg.id] = reg));
+            registrations?.forEach(reg => (regMap[reg.id] = reg));
             newConfig.registrations = Object.values(regMap);
         }
 
