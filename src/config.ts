@@ -49,7 +49,7 @@ export class AppConfig {
         const configData: AppConfigData = {
             ...argvDefaults, // argv defaults
             ...loadedData, // user config file
-            ...argv._opts // user cmd line
+            ...argv._opts as Object // user cmd line
         };
 
         configData.tags = this.makeArray(configData, 'tags', 'tag');
@@ -72,7 +72,7 @@ export class AppConfig {
                         configData.token = registration.token;
                         if (
                             registration.url != null &&
-                            argv._opts.url === undefined
+                            argv._opts['url'] === undefined
                         ) {
                             configData.url = registration.url;
                         }
@@ -97,8 +97,8 @@ export class AppConfig {
         return [
             argvConfig,
             process.env.CLA_WORKER_CONFIG,
-            path.join(CLA_WORKER_HOME, './cla-worker.yml'),
-            path.join(process.env.HOME, './cla-worker.yml'),
+            CLA_WORKER_HOME != null ? path.join(CLA_WORKER_HOME, './cla-worker.yml') : null,
+            process.env.HOME != null ? path.join(process.env.HOME, './cla-worker.yml'): null,
             path.join('/etc/cla-worker.yml')
         ].filter(it => it != null && typeof it !== 'boolean');
     }

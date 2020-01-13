@@ -87,7 +87,7 @@ module.exports = new class implements yargs.CommandModule {
             if (save) {
                 app.info('saving registration to config file...');
 
-                const registration: Registration = { id, token };
+                const registration: Registration = { id: pubsub.id, token };
 
                 if (argv._opts['url']) {
                     registration.url = argv._opts['url'];
