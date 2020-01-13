@@ -107,6 +107,17 @@ export default class PubSub {
         });
     }
 
+    tidyResponseText(str) {
+        if (typeof str !== 'string') return '';
+
+        if (str.length > 400 && /<html/.test(str)) {
+            const res = str.substr(0, 100) + ' [...] ' + str.substr(-100);
+            return res.replace(/[\n\r\t\s]+/gs, ' ');
+        } else {
+            return str;
+        }
+    }
+
     async register(passkey: string) {
         try {
             const response = await axios({
@@ -119,9 +130,15 @@ export default class PubSub {
         } catch (error) {
             const { response } = error;
             if (response && response.statusText) {
+                const additional =
+                    response.status === 502
+                        ? `\n\nIs the pubsub server up and correcly configured? Please check the server (nginx) logs.\n`
+                        : '';
                 throw `error registering worker at ${this.baseURL} ==> ${
                     response.status
-                } ${response.statusText}: ${response.data || ''}`;
+                } ${response.statusText}: ${this.tidyResponseText(
+                    response.data
+                )}${additional}`;
             } else {
                 throw error;
             }
@@ -145,7 +162,9 @@ export default class PubSub {
             if (response && response.statusText) {
                 throw `error unregistering worker at ${this.baseURL} ==> ${
                     response.status
-                } ${response.statusText}: ${response.data || ''}`;
+                } ${response.statusText}: ${this.tidyResponseText(
+                    response.data
+                )}`;
             } else {
                 throw error;
             }
@@ -366,7 +385,9 @@ export default class PubSub {
             if (response && response.statusText) {
                 throw `error publishing data to ${this.baseURL} ==> ${
                     response.status
-                } ${response.statusText}: ${response.data || ''}`;
+                } ${response.statusText}: ${this.tidyResponseText(
+                    response.data
+                )}`;
             } else {
                 throw error;
             }
@@ -390,7 +411,9 @@ export default class PubSub {
             if (response && response.statusText) {
                 throw `error downloading data ${key} from ${this.baseURL} ==> ${
                     response.status
-                } ${response.statusText}: ${response.data || ''}`;
+                } ${response.statusText}: ${this.tidyResponseText(
+                    response.data
+                )}`;
             } else {
                 throw error;
             }
@@ -416,7 +439,9 @@ export default class PubSub {
             if (response && response.statusText) {
                 throw `error uploading data ${key} to ${this.baseURL} ==> ${
                     response.status
-                } ${response.statusText}: ${response.data || ''}`;
+                } ${response.statusText}: ${this.tidyResponseText(
+                    response.data
+                )}`;
             } else {
                 throw error;
             }
