@@ -49,7 +49,7 @@ export class AppConfig {
         const configData: AppConfigData = {
             ...argvDefaults, // argv defaults
             ...loadedData, // user config file
-            ...argv._opts as Object // user cmd line
+            ...argv._opts // user cmd line
         };
 
         configData.tags = this.makeArray(configData, 'tags', 'tag');
