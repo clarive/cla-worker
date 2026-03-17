@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Run unit tests
+        run: go test -race -count=1 ./internal/... ./cmd/...
+
+      - name: Run integration tests
+        run: go test -race -count=1 -tags=integration ./tests/...
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Build binaries
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          LDFLAGS="-s -w -X github.com/clarive/cla-worker-go/internal/version.Version=${VERSION}"
+          mkdir -p dist
+
+          GOOS=linux   GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-linux-amd64 .
+          GOOS=linux   GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-linux-arm64 .
+          GOOS=darwin  GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-darwin-amd64 .
+          GOOS=darwin  GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-windows-amd64.exe .
+
+      - name: Create archives
+        run: |
+          cd dist
+          for f in cla-worker-linux-* cla-worker-darwin-*; do
+            tar czf "${f}.tar.gz" "${f}"
+          done
+          zip cla-worker-windows-amd64.exe.zip cla-worker-windows-amd64.exe
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt

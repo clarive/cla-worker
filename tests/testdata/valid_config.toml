@@ -1,0 +1,14 @@
+id = "worker-1"
+token = "tok-abc123"
+url = "http://example.com:8080"
+tags = ["linux", "docker"]
+verbose = 1
+chunk_size = 65536
+
+[[registrations]]
+id = "worker-1"
+token = "tok-abc123"
+
+[[registrations]]
+id = "worker-2"
+token = "tok-def456"
