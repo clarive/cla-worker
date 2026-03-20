@@ -35,8 +35,7 @@ func NewMockClariveServer() *MockClariveServer {
 
 	ms.RegisterHandler = func(r *http.Request) (int, interface{}) {
 		return 200, map[string]interface{}{
-			"token":    "test-token-abc",
-			"projects": []string{"project-1"},
+			"token": "test-token-abc",
 		}
 	}
 
@@ -63,15 +62,20 @@ func NewMockClariveServer() *MockClariveServer {
 		}
 	})
 
-	mux.HandleFunc("/pubsub/register", func(w http.ResponseWriter, r *http.Request) {
-		code, resp := ms.RegisterHandler(r)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	mux.HandleFunc("/pubsub/unregister", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+	mux.HandleFunc("/workeradmin/register_api", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Query().Get("path")
+		switch path {
+		case "register":
+			code, resp := ms.RegisterHandler(r)
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(resp)
+		case "unregister_by_token":
+			w.WriteHeader(200)
+			json.NewEncoder(w).Encode(map[string]interface{}{"deleted": 1})
+		default:
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": "unknown path"})
+		}
 	})
 
 	mux.HandleFunc("/pubsub/publish", func(w http.ResponseWriter, r *http.Request) {

@@ -35,3 +35,31 @@ func TestOrigin_ContainsPID(t *testing.T) {
 	pidStr := parts[len(parts)-1]
 	assert.NotEmpty(t, pidStr)
 }
+
+func TestUsername_ReturnsNonEmpty(t *testing.T) {
+	u := Username()
+	assert.NotEmpty(t, u)
+	assert.NotEqual(t, "unknown", u)
+}
+
+func TestHostname_ReturnsNonEmpty(t *testing.T) {
+	h := Hostname()
+	assert.NotEmpty(t, h)
+	assert.NotEqual(t, "unknown", h)
+}
+
+func TestDefaultWorkerName_UsesOSDefaults(t *testing.T) {
+	name := DefaultWorkerName("", "")
+	assert.Contains(t, name, "@")
+	assert.Equal(t, Username()+"@"+Hostname(), name)
+}
+
+func TestDefaultWorkerName_OverridesUser(t *testing.T) {
+	name := DefaultWorkerName("alice", "")
+	assert.Equal(t, "alice@"+Hostname(), name)
+}
+
+func TestDefaultWorkerName_OverridesServer(t *testing.T) {
+	name := DefaultWorkerName("", "mybox")
+	assert.Equal(t, Username()+"@mybox", name)
+}

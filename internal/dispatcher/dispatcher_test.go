@@ -129,6 +129,73 @@ func TestDispatcher_ConcurrentMessages(t *testing.T) {
 	assert.Equal(t, 5, doneCount)
 }
 
+func TestDispatcher_NotificationEventsIgnored(t *testing.T) {
+	// Server-side notification events (worker.connect, worker.disconnect, etc.)
+	// should be silently ignored, not treated as errors.
+	notifications := []string{
+		"worker.connect",
+		"worker.disconnect",
+		"worker.register",
+		"worker.unregister",
+	}
+
+	for _, evt := range notifications {
+		t.Run(evt, func(t *testing.T) {
+			mp := &mockPublisher{}
+			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			ch := make(chan pubsub.Message, 1)
+			ch <- pubsub.Message{Event: evt, OID: "oid-1", Data: map[string]interface{}{
+				"id": "w1",
+			}}
+			close(ch)
+
+			d.Run(ctx, ch)
+
+			// Should have sent an ack but no error result
+			pubs := mp.getPayloads()
+			for _, p := range pubs {
+				if rc, ok := p["rc"]; ok {
+					assert.NotEqual(t, 99, rc,
+						"notification event %s should not produce an error", evt)
+				}
+			}
+		})
+	}
+}
+
+func TestDispatcher_NotificationEventsDoNotPublishError(t *testing.T) {
+	// Specifically test that worker.connect does not cause an "invalid command" error
+	mp := &mockPublisher{}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	ch := make(chan pubsub.Message, 2)
+	// First a notification event, then a real command
+	ch <- pubsub.Message{Event: "worker.connect", OID: "oid-1", Data: map[string]interface{}{"id": "w1"}}
+	ch <- pubsub.Message{Event: "worker.exec", OID: "oid-2", Data: map[string]interface{}{"cmd": "echo ok"}}
+	close(ch)
+
+	d.Run(ctx, ch)
+
+	events := mp.getEvents()
+	// Should have ack for connect, ack for exec, result, done — but no error from connect
+	for _, p := range mp.getPayloads() {
+		if p["_event"] == "worker.result" {
+			output, _ := p["output"].(string)
+			assert.NotContains(t, output, "invalid command worker.connect",
+				"worker.connect should not produce an error result")
+		}
+	}
+	// exec should still produce a result
+	assert.Contains(t, events, "worker.exec.ack")
+}
+
 func TestDispatcher_ContextCancel(t *testing.T) {
 	mp := &mockPublisher{}
 	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)

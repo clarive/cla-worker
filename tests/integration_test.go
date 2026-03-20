@@ -66,7 +66,7 @@ func TestIntegration_Register_Success(t *testing.T) {
 	result, err := ps.Register(context.Background(), "valid-passkey")
 	require.NoError(t, err)
 	assert.Equal(t, "test-token-abc", result.Token)
-	assert.Contains(t, result.Projects, "project-1")
+	assert.Empty(t, result.Error)
 }
 
 func TestIntegration_Register_RejectedPasskey(t *testing.T) {
@@ -401,6 +401,61 @@ func TestIntegration_Shutdown(t *testing.T) {
 	disp.Run(ctx, messages)
 
 	assert.Equal(t, 10, disp.ShutdownCode())
+}
+
+// Test that server-side notification events (worker.connect, worker.disconnect, etc.)
+// are handled gracefully and don't cause errors during a run session.
+func TestIntegration_NotificationEventsIgnored(t *testing.T) {
+	ms, ps := setupIntegration(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	messages, err := ps.Connect(ctx)
+	require.NoError(t, err)
+
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		// Server sends notification events that the UI consumes
+		ms.SendCommand("oid-connect", "worker.connect", map[string]interface{}{
+			"id": "test-worker",
+		})
+		time.Sleep(100 * time.Millisecond)
+		ms.SendCommand("oid-register", "worker.register", map[string]interface{}{
+			"id": "other-worker",
+		})
+		time.Sleep(100 * time.Millisecond)
+		// Then a real command
+		ms.SendCommand("oid-exec", "worker.exec", map[string]interface{}{
+			"cmd": "echo after-connect",
+		})
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	exec := executor.NewOsExecutor()
+	fs := filetransfer.NewOsFileSystem()
+	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
+
+	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil)
+	disp.SetCancelFunc(cancel)
+
+	disp.Run(ctx, messages)
+
+	// The exec command should have succeeded
+	results := ms.GetPublishedByEvent("worker.result")
+	require.NotEmpty(t, results, "exec command should produce a result")
+	assert.Contains(t, results[0].Data["output"], "after-connect")
+
+	// No error results should be produced from notification events
+	for _, r := range results {
+		if output, ok := r.Data["output"].(string); ok {
+			assert.NotContains(t, output, "invalid command worker.connect",
+				"worker.connect should not produce error")
+			assert.NotContains(t, output, "invalid command worker.register",
+				"worker.register should not produce error")
+		}
+	}
 }
 
 func TestIntegration_InvalidJSON(t *testing.T) {

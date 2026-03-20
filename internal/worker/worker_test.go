@@ -49,6 +49,9 @@ func TestWorker_GeneratesID(t *testing.T) {
 
 	w.Run(ctx)
 	assert.NotEmpty(t, cfg.ID)
+	// claude: verify deterministic user@hostname format (no random xid suffix)
+	assert.Contains(t, cfg.ID, "@")
+	assert.NotContains(t, cfg.ID, "/", "ID should not contain random xid suffix")
 }
 
 func TestWorker_GeneratesOrigin(t *testing.T) {

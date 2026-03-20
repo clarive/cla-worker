@@ -37,10 +37,10 @@ func newMockServer(t *testing.T) *mockServer {
 	}
 
 	ms.registerResp = func(r *http.Request) (int, interface{}) {
-		return 200, map[string]interface{}{"token": "test-token", "projects": []string{"proj1"}}
+		return 200, map[string]interface{}{"token": "test-token"}
 	}
 	ms.unregisterResp = func(r *http.Request) (int, interface{}) {
-		return 200, map[string]interface{}{"ok": true}
+		return 200, map[string]interface{}{"deleted": 1}
 	}
 
 	mux := http.NewServeMux()
@@ -66,16 +66,21 @@ func newMockServer(t *testing.T) *mockServer {
 		}
 	})
 
-	mux.HandleFunc("/pubsub/register", func(w http.ResponseWriter, r *http.Request) {
-		code, resp := ms.registerResp(r)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	mux.HandleFunc("/pubsub/unregister", func(w http.ResponseWriter, r *http.Request) {
-		code, resp := ms.unregisterResp(r)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(resp)
+	mux.HandleFunc("/workeradmin/register_api", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Query().Get("path")
+		switch path {
+		case "register":
+			code, resp := ms.registerResp(r)
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(resp)
+		case "unregister_by_token":
+			code, resp := ms.unregisterResp(r)
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(resp)
+		default:
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": "unknown path"})
+		}
 	})
 
 	mux.HandleFunc("/pubsub/publish", func(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +135,6 @@ func TestClient_Register_Success(t *testing.T) {
 	result, err := c.Register(context.Background(), "valid-key")
 	require.NoError(t, err)
 	assert.Equal(t, "test-token", result.Token)
-	assert.Contains(t, result.Projects, "proj1")
 }
 
 func TestClient_Register_RejectedPasskey(t *testing.T) {
