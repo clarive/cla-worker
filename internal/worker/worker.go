@@ -50,8 +50,9 @@ func (a *jsEvalAdapter) Eval(ctx context.Context, code string, stash map[string]
 func (w *Worker) Run(ctx context.Context) (int, error) {
 	cfg := w.cfg
 
+	// claude: use deterministic user@hostname as fallback, not random WorkerID
 	if cfg.ID == "" {
-		cfg.ID = identity.WorkerID()
+		cfg.ID = identity.DefaultWorkerName("", "")
 	}
 	if cfg.Origin == "" {
 		cfg.Origin = identity.Origin()

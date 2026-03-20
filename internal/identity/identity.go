@@ -9,14 +9,38 @@ import (
 )
 
 func WorkerID() string {
-	return fmt.Sprintf("%s@%s/%s", username(), hostname(), xid.New().String())
+	return fmt.Sprintf("%s@%s/%s", Username(), Hostname(), xid.New().String())
+}
+
+// DefaultWorkerName generates a worker name from user and server.
+// Format: user@server-name (e.g. "joe@server1")
+func DefaultWorkerName(user, server string) string {
+	u := user
+	if u == "" {
+		u = Username()
+	}
+	s := server
+	if s == "" {
+		s = Hostname()
+	}
+	return fmt.Sprintf("%s@%s", u, s)
 }
 
 func Origin() string {
-	return fmt.Sprintf("%s@%s/%d", username(), hostname(), os.Getpid())
+	return fmt.Sprintf("%s@%s/%d", Username(), Hostname(), os.Getpid())
 }
 
-func username() string {
+// Username returns the current OS username.
+func Username() string {
+	return osUsername()
+}
+
+// Hostname returns the current OS hostname.
+func Hostname() string {
+	return osHostname()
+}
+
+func osUsername() string {
 	u, err := user.Current()
 	if err != nil {
 		return "unknown"
@@ -24,7 +48,7 @@ func username() string {
 	return u.Username
 }
 
-func hostname() string {
+func osHostname() string {
 	h, err := os.Hostname()
 	if err != nil {
 		return "unknown"

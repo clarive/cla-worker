@@ -28,9 +28,40 @@ type Client struct {
 }
 
 type RegisterResult struct {
-	Token    string   `json:"token"`
-	Error    string   `json:"error"`
-	Projects []string `json:"projects"`
+	Token string `json:"token"`
+	Error string `json:"-"`
+	Msg   string `json:"msg"`
+}
+
+// UnmarshalJSON handles the server's polymorphic error field which can be
+// a number (1), a string ("message"), or absent.
+func (r *RegisterResult) UnmarshalJSON(data []byte) error {
+	type Alias RegisterResult
+	aux := &struct {
+		*Alias
+		Error json.RawMessage `json:"error"`
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	if aux.Error != nil {
+		s := string(aux.Error)
+		// Remove quotes if it's a JSON string
+		var str string
+		if json.Unmarshal(aux.Error, &str) == nil {
+			r.Error = str
+		} else {
+			// Numeric or boolean — use msg field as the error text
+			if r.Msg != "" {
+				r.Error = r.Msg
+			} else {
+				r.Error = s
+			}
+		}
+	}
+	return nil
 }
 
 func NewClient(opts ...Option) *Client {
@@ -66,8 +97,21 @@ func (c *Client) address(path string) string {
 }
 
 func (c *Client) Register(ctx context.Context, passkey string) (*RegisterResult, error) {
-	addr := c.address("/pubsub/register")
-	addr += "&passkey=" + url.QueryEscape(passkey)
+	params := url.Values{}
+	params.Set("path", "register")
+	params.Set("id", c.opts.ID)
+	params.Set("token", c.opts.Token)
+	params.Set("origin", c.opts.Origin)
+	params.Set("tags", strings.Join(c.opts.Tags, ","))
+	params.Set("version", c.opts.Version)
+	params.Set("passkey", passkey)
+	params.Set("server", c.opts.Server)
+	params.Set("user", c.opts.User)
+	if c.opts.ServerMID != "" {
+		params.Set("server_mid", c.opts.ServerMID)
+	}
+
+	addr := fmt.Sprintf("%s/workeradmin/register_api?%s", c.opts.BaseURL, params.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, addr, nil)
 	if err != nil {
@@ -96,7 +140,12 @@ func (c *Client) Register(ctx context.Context, passkey string) (*RegisterResult,
 }
 
 func (c *Client) Unregister(ctx context.Context) error {
-	addr := c.address("/pubsub/unregister")
+	params := url.Values{}
+	params.Set("path", "unregister_by_token")
+	params.Set("id", c.opts.ID)
+	params.Set("token", c.opts.Token)
+
+	addr := fmt.Sprintf("%s/workeradmin/register_api?%s", c.opts.BaseURL, params.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, addr, nil)
 	if err != nil {
@@ -114,6 +163,17 @@ func (c *Client) Unregister(ctx context.Context) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unregister failed: %d %s: %s",
 			resp.StatusCode, resp.Status, string(body))
+	}
+
+	var result struct {
+		Error json.RawMessage `json:"error"`
+		Msg   string          `json:"msg"`
+	}
+	if err := json.Unmarshal(body, &result); err == nil && result.Error != nil {
+		if result.Msg != "" {
+			return fmt.Errorf("unregister error: %s", result.Msg)
+		}
+		return fmt.Errorf("unregister error: %s", string(result.Error))
 	}
 
 	return nil

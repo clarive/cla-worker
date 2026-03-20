@@ -22,6 +22,11 @@ type Config struct {
 	Passkey       string         `yaml:"passkey"        toml:"passkey"        mapstructure:"passkey"`
 	Tags          []string       `yaml:"tags"           toml:"tags"           mapstructure:"tags"`
 	Origin        string         `yaml:"origin"         toml:"origin"         mapstructure:"origin"`
+	Server        string         `yaml:"server"         toml:"server"         mapstructure:"server"`
+	ServerMID     string         `yaml:"server_mid"     toml:"server_mid"     mapstructure:"server_mid"`
+	NoServer      bool           `yaml:"no_server"      toml:"no_server"      mapstructure:"no_server"`
+	User          string         `yaml:"user"           toml:"user"           mapstructure:"user"`
+	Name          string         `yaml:"name"           toml:"name"           mapstructure:"name"`
 	Verbose       int            `yaml:"verbose"        toml:"verbose"        mapstructure:"verbose"`
 	Daemon        bool           `yaml:"daemon"         toml:"daemon"         mapstructure:"daemon"`
 	Logfile       string         `yaml:"logfile"        toml:"logfile"        mapstructure:"logfile"`

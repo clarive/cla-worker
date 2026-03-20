@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/clarive/cla-worker-go/internal/daemon"
+	"github.com/clarive/cla-worker-go/internal/identity"
 	"github.com/clarive/cla-worker-go/internal/worker"
 )
 
@@ -17,6 +18,12 @@ var runCmd = &cobra.Command{
 	Short: "Run the worker online",
 	Long:  "Start the Clarive Worker and connect to the server.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// claude: auto-detect worker ID from OS if not explicitly set
+		if cfg.ID == "" {
+			cfg.ID = identity.DefaultWorkerName(identity.Username(), identity.Hostname())
+			fmt.Printf("ℹ using auto-detected worker ID: %s\n", cfg.ID)
+		}
+
 		daemonMode, _ := cmd.Flags().GetBool("daemon")
 
 		if daemonMode {

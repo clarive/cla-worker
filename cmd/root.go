@@ -88,6 +88,26 @@ func mergeFlags(cmd *cobra.Command) {
 		v, _ := flags.GetString("pidfile")
 		cfg.Pidfile = v
 	}
+	if flags.Changed("server") {
+		v, _ := flags.GetString("server")
+		cfg.Server = v
+	}
+	if flags.Changed("server-mid") {
+		v, _ := flags.GetString("server-mid")
+		cfg.ServerMID = v
+	}
+	if flags.Changed("no-server") {
+		v, _ := flags.GetBool("no-server")
+		cfg.NoServer = v
+	}
+	if flags.Changed("user") {
+		v, _ := flags.GetString("user")
+		cfg.User = v
+	}
+	if flags.Changed("name") {
+		v, _ := flags.GetString("name")
+		cfg.Name = v
+	}
 }
 
 func Execute() error {

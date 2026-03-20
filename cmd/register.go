@@ -19,19 +19,43 @@ var registerCmd = &cobra.Command{
 			return fmt.Errorf("passkey is required (use --passkey)")
 		}
 
-		if cfg.ID == "" {
-			cfg.ID = identity.WorkerID()
+		// claude: auto-populate user and server from OS if not explicitly set
+		if cfg.User == "" {
+			cfg.User = identity.Username()
+		}
+		if cfg.Server == "" {
+			cfg.Server = identity.Hostname()
+		}
+
+		// claude: regenerate ID from OS defaults unless --id was explicitly passed;
+		// ResolveToken may have set cfg.ID from config file, which is stale for register
+		if !cmd.Flags().Changed("id") {
+			if cmd.Flags().Changed("name") {
+				cfg.ID = cfg.Name
+			} else {
+				cfg.ID = identity.DefaultWorkerName(cfg.User, cfg.Server)
+			}
 		}
 		if cfg.Origin == "" {
 			cfg.Origin = identity.Origin()
 		}
 
-		ps := pubsub.NewClient(
+		opts := []pubsub.Option{
 			pubsub.WithID(cfg.ID),
 			pubsub.WithToken(cfg.Token),
 			pubsub.WithBaseURL(cfg.URL),
 			pubsub.WithOrigin(cfg.Origin),
-		)
+			pubsub.WithUser(cfg.User),
+		}
+
+		if !cfg.NoServer {
+			opts = append(opts, pubsub.WithServer(cfg.Server))
+			if cfg.ServerMID != "" {
+				opts = append(opts, pubsub.WithServerMID(cfg.ServerMID))
+			}
+		}
+
+		ps := pubsub.NewClient(opts...)
 
 		result, err := ps.Register(context.Background(), cfg.Passkey)
 		if err != nil {
@@ -43,7 +67,6 @@ var registerCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Registration token: %s\n", result.Token)
-		fmt.Printf("Projects registered: %v\n", result.Projects)
 		fmt.Printf("\nStart the worker with:\n  cla-worker run --token %s --id %s\n\n", result.Token, cfg.ID)
 		fmt.Printf("To remove this registration:\n  cla-worker unregister --token %s --id %s\n\n", result.Token, cfg.ID)
 
@@ -69,6 +92,11 @@ func init() {
 	registerCmd.Flags().String("id", "", "worker ID")
 	registerCmd.Flags().String("origin", "", "origin identifier")
 	registerCmd.Flags().StringSlice("tags", nil, "worker tags")
+	registerCmd.Flags().String("server", "", "bind to a server resource by name (default: OS hostname)")
+	registerCmd.Flags().String("server-mid", "", "bind to a server resource by MID")
+	registerCmd.Flags().Bool("no-server", false, "do not bind to any server")
+	registerCmd.Flags().String("user", "", "OS user for the worker (default: current user)")
+	registerCmd.Flags().String("name", "", "worker name (default: user@hostname)")
 
 	rootCmd.AddCommand(registerCmd)
 }

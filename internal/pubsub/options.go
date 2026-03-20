@@ -13,6 +13,9 @@ type Options struct {
 	Origin         string
 	Tags           []string
 	Version        string
+	Server         string
+	ServerMID      string
+	User           string
 	Logger         *slog.Logger
 	HTTPClient     *http.Client
 	ReconnectDelay time.Duration
@@ -54,4 +57,16 @@ func WithPubSubHTTPClient(c *http.Client) Option {
 
 func WithPubSubReconnectDelay(d time.Duration) Option {
 	return func(o *Options) { o.ReconnectDelay = d }
+}
+
+func WithServer(s string) Option {
+	return func(o *Options) { o.Server = s }
+}
+
+func WithServerMID(s string) Option {
+	return func(o *Options) { o.ServerMID = s }
+}
+
+func WithUser(u string) Option {
+	return func(o *Options) { o.User = u }
 }

@@ -99,6 +99,9 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
 		d.handleFileExists(ctx, msg.OID, msg.Data)
 	case "worker.shutdown":
 		d.handleShutdown(ctx, msg.OID, msg.Data)
+	case "worker.connect", "worker.disconnect", "worker.register", "worker.unregister":
+		// Server-side notification events for the UI — ignore silently
+		d.logger.Debug("ignoring notification event", "event", msg.Event, "oid", msg.OID)
 	default:
 		d.publishError(ctx, msg.OID, msg.Event,
 			fmt.Sprintf("invalid command %s in message id=%s", msg.Event, msg.OID))
