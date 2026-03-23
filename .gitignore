@@ -6,4 +6,6 @@ coverage.html
 *.exe
 *.test
 *.prof
+*.yml
+cla-worker
 .agent/
