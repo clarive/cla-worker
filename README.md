@@ -101,7 +101,7 @@ tags = ["java", "nodejs"]
 | `passkey` | Project passkey (used during registration) |
 | `tags` | Comma-separated string or list of capability tags |
 | `origin` | Origin identifier (defaults to `user@host/pid`) |
-| `verbose` | Verbosity level (integer) |
+| `verbose` | Verbosity level: 0 = INFO (default), 1+ = DEBUG |
 | `logfile` | Path to log file (daemon mode) |
 | `pidfile` | Path to PID file (daemon mode) |
 | `chunk_size` | File transfer chunk size in bytes (default: 65536) |
@@ -222,6 +222,31 @@ do:
   shell:
     worker: { tags: ['java'] }
     cmd: javac MyClass.java
+```
+
+## Debug Mode
+
+By default the worker logs at INFO level. Periodic heartbeat events
+(`worker.connect`) are logged once at startup and then suppressed to avoid
+noise. To see all messages, including heartbeats and internal diagnostics,
+enable debug mode using the `-v` flag or the `verbose` config field.
+
+Using the command-line flag:
+
+```bash
+cla-worker run -v
+```
+
+Or in the config file (`cla-worker.yml`):
+
+```yaml
+verbose: 1
+```
+
+Debug mode is also supported in daemon mode:
+
+```bash
+cla-worker run --daemon -v
 ```
 
 ## Worker Security

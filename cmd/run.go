@@ -51,8 +51,17 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 }
 
+func logLevel() slog.Level {
+	if cfg.Verbose >= 1 {
+		return slog.LevelDebug
+	}
+	return slog.LevelInfo
+}
+
 func runForeground() error {
-	logger := slog.Default()
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: logLevel(),
+	}))
 	w := worker.New(cfg, logger)
 
 	code, err := w.Run(context.Background())

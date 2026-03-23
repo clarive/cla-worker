@@ -111,6 +111,13 @@ func (w *Worker) Run(ctx context.Context) (int, error) {
 	return 0, nil
 }
 
+func (w *Worker) logLevel() slog.Level {
+	if w.cfg.Verbose >= 1 {
+		return slog.LevelDebug
+	}
+	return slog.LevelInfo
+}
+
 func (w *Worker) RunDaemon(ctx context.Context) (int, error) {
 	cfg := w.cfg
 
@@ -120,7 +127,9 @@ func (w *Worker) RunDaemon(ctx context.Context) (int, error) {
 			return 1, err
 		}
 		defer logFile.Close()
-		w.logger = slog.New(slog.NewJSONHandler(logFile, nil))
+		w.logger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
+			Level: w.logLevel(),
+		}))
 	}
 
 	return w.Run(ctx)

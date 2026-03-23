@@ -20,6 +20,7 @@ type Dispatcher struct {
 	wg           sync.WaitGroup
 	cancelFunc   context.CancelFunc
 	shutdownCode int
+	seenConnect  bool
 }
 
 func New(
@@ -73,8 +74,27 @@ func (d *Dispatcher) Run(ctx context.Context, messages <-chan pubsub.Message) {
 	}
 }
 
+func (d *Dispatcher) isNotificationEvent(event string) bool {
+	switch event {
+	case "worker.connect", "worker.disconnect", "worker.register", "worker.unregister":
+		return true
+	}
+	return false
+}
+
 func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
-	d.logger.Info("dispatching message", "event", msg.Event, "oid", msg.OID)
+	if d.isNotificationEvent(msg.Event) {
+		// claude: log first worker.connect at INFO so the user sees the connection,
+		// then demote subsequent notification events to DEBUG to avoid log spam
+		if msg.Event == "worker.connect" && !d.seenConnect {
+			d.seenConnect = true
+			d.logger.Info("dispatching message", "event", msg.Event, "oid", msg.OID)
+		} else {
+			d.logger.Debug("dispatching message", "event", msg.Event, "oid", msg.OID)
+		}
+	} else {
+		d.logger.Info("dispatching message", "event", msg.Event, "oid", msg.OID)
+	}
 
 	if msg.Event != "worker.shutdown" {
 		d.publisher.Publish(ctx, msg.Event+".ack", map[string]interface{}{
@@ -100,8 +120,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
 	case "worker.shutdown":
 		d.handleShutdown(ctx, msg.OID, msg.Data)
 	case "worker.connect", "worker.disconnect", "worker.register", "worker.unregister":
-		// Server-side notification events for the UI — ignore silently
-		d.logger.Debug("ignoring notification event", "event", msg.Event, "oid", msg.OID)
+		// claude: server-side notification events — already logged above
 	default:
 		d.publishError(ctx, msg.OID, msg.Event,
 			fmt.Sprintf("invalid command %s in message id=%s", msg.Event, msg.OID))
