@@ -129,8 +129,15 @@ func (c *Client) readStream(ctx context.Context, body io.ReadCloser) {
 
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			if err != io.EOF {
-				c.logger.Debug("SSE read error", "error", err)
+			if c.isDone(ctx) {
+				c.shutdownEvents()
+				return
+			}
+			// claude: WARN on connection loss so operators see it
+			if err == io.EOF {
+				c.logger.Warn("SSE connection lost (server closed)")
+			} else {
+				c.logger.Warn("SSE connection lost", "error", err)
 			}
 			c.handleDisconnect(ctx)
 			return
@@ -219,10 +226,12 @@ func (c *Client) handleDisconnect(ctx context.Context) {
 	case <-time.After(delay):
 	}
 
-	c.logger.Debug("SSE reconnecting", "url", c.url)
+	c.logger.Info("SSE reconnecting...", "delay", delay)
 	if err := c.doConnect(ctx); err != nil {
-		c.logger.Debug("SSE reconnect failed", "error", err)
+		c.logger.Warn("SSE reconnect failed, will retry", "error", err)
 		c.handleDisconnect(ctx)
+	} else {
+		c.logger.Info("SSE reconnected")
 	}
 }
 
