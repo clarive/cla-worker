@@ -2,8 +2,11 @@ package identity
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
 	"os/user"
+	"strings"
 
 	"github.com/rs/xid"
 )
@@ -48,10 +51,55 @@ func osUsername() string {
 	return u.Username
 }
 
+// claude: isIPAddress checks if a string looks like an IPv4 or IPv6 address.
+func isIPAddress(s string) bool {
+	return net.ParseIP(s) != nil
+}
+
+// claude: isValidHostname checks that a string is usable as a worker hostname:
+// not empty, not an IP, and no spaces (rejects display names like "MacBook Pro").
+func isValidHostname(s string) bool {
+	return s != "" && !isIPAddress(s) && !strings.ContainsRune(s, ' ')
+}
+
+// claude: osHostname tries multiple sources to get a real hostname,
+// using IP address only as the absolute last resort.
 func osHostname() string {
-	h, err := os.Hostname()
-	if err != nil {
-		return "unknown"
+	// 1. Try os.Hostname() — best case, returns a real name
+	if h, err := os.Hostname(); err == nil && isValidHostname(h) {
+		return h
 	}
-	return h
+
+	// 2. Try scutil --get HostName (macOS explicitly set hostname)
+	if out, err := exec.Command("scutil", "--get", "HostName").Output(); err == nil {
+		if name := strings.TrimSpace(string(out)); isValidHostname(name) {
+			return name
+		}
+	}
+
+	// 3. Try the hostname command (returns FQDN like "m4c.local")
+	if out, err := exec.Command("hostname").Output(); err == nil {
+		if name := strings.TrimSpace(string(out)); isValidHostname(name) {
+			return name
+		}
+	}
+
+	// 4. Try the HOSTNAME env var
+	if h := os.Getenv("HOSTNAME"); isValidHostname(h) {
+		return h
+	}
+
+	// 5. Try scutil --get LocalHostName (macOS Bonjour name, e.g. "m4c")
+	if out, err := exec.Command("scutil", "--get", "LocalHostName").Output(); err == nil {
+		if name := strings.TrimSpace(string(out)); isValidHostname(name) {
+			return name
+		}
+	}
+
+	// 6. Last resort: return whatever os.Hostname gives, even if it's an IP
+	if h, err := os.Hostname(); err == nil && h != "" {
+		return h
+	}
+
+	return "unknown"
 }

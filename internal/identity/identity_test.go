@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"net"
 	"regexp"
 	"strings"
 	"testing"
@@ -62,4 +63,40 @@ func TestDefaultWorkerName_OverridesUser(t *testing.T) {
 func TestDefaultWorkerName_OverridesServer(t *testing.T) {
 	name := DefaultWorkerName("", "mybox")
 	assert.Equal(t, Username()+"@mybox", name)
+}
+
+func TestIsIPAddress(t *testing.T) {
+	assert.True(t, isIPAddress("192.168.1.139"))
+	assert.True(t, isIPAddress("10.0.0.1"))
+	assert.True(t, isIPAddress("::1"))
+	assert.True(t, isIPAddress("fe80::1"))
+	assert.False(t, isIPAddress("myhost"))
+	assert.False(t, isIPAddress("server1.local"))
+	assert.False(t, isIPAddress("foo-bar"))
+	assert.False(t, isIPAddress(""))
+}
+
+func TestIsValidHostname(t *testing.T) {
+	// claude: valid hostnames
+	assert.True(t, isValidHostname("foo"))
+	assert.True(t, isValidHostname("server1"))
+	assert.True(t, isValidHostname("bar-baz.local"))
+
+	// claude: reject IPs, spaces, empty
+	assert.False(t, isValidHostname("10.0.0.1"))
+	assert.False(t, isValidHostname("Some Laptop"))
+	assert.False(t, isValidHostname("My Computer"))
+	assert.False(t, isValidHostname(""))
+}
+
+func TestHostname_PrefersNameOverIP(t *testing.T) {
+	h := Hostname()
+	// claude: hostname should not be an IP address unless no other option exists
+	if net.ParseIP(h) != nil {
+		t.Logf("WARNING: Hostname() returned IP address %q — no real hostname available on this machine", h)
+	} else {
+		assert.NotEmpty(t, h)
+		assert.NotEqual(t, "unknown", h)
+		assert.False(t, strings.Contains(h, " "), "hostname should not contain spaces, got %q", h)
+	}
 }
