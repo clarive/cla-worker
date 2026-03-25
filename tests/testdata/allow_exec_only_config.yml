@@ -1,0 +1,5 @@
+id: worker-allow
+token: tok-allow
+url: http://example.com:8080
+allow_verbs:
+  - exec

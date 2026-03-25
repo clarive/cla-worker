@@ -1,0 +1,4 @@
+id: worker-str
+token: tok-str
+url: http://example.com:8080
+allow_verbs: exec,get_file
