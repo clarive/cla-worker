@@ -11,6 +11,7 @@ type Publisher interface {
 	Push(ctx context.Context, key, filename string, r io.Reader) error
 	Pop(ctx context.Context, key string, w io.Writer) error
 	Close(ctx context.Context) error
+	SetID(id string)
 }
 
 type CommandExecutor interface {

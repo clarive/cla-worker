@@ -68,6 +68,8 @@ func (m *mockPublisher) Close(ctx context.Context) error {
 	return nil
 }
 
+func (m *mockPublisher) SetID(id string) {}
+
 func (m *mockPublisher) getEvents() []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()

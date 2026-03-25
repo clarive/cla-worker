@@ -121,7 +121,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
 		d.logger.Info("dispatching message", "event", msg.Event, "oid", msg.OID)
 	}
 
-	if msg.Event != "worker.shutdown" {
+	if msg.Event != "worker.shutdown" && msg.Event != "worker.rename" {
 		d.publisher.Publish(ctx, msg.Event+".ack", map[string]interface{}{
 			"oid": msg.OID,
 		})
@@ -157,6 +157,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
 		d.handleShutdown(ctx, msg.OID, msg.Data)
 	case "worker.exec.cancel":
 		d.handleExecCancel(ctx, msg.OID, msg.Data)
+	case "worker.rename":
+		// claude: server renamed this worker — update identity for future reconnects
+		oldName, _ := msg.Data["old_name"].(string)
+		newName, _ := msg.Data["new_name"].(string)
+		d.logger.Warn("renamed worker id", "old_name", oldName, "new_name", newName)
+		if newName != "" {
+			d.publisher.SetID(newName)
+		}
 	case "worker.connect", "worker.disconnect", "worker.register", "worker.unregister":
 		// claude: server-side notification events — already logged above
 	default:

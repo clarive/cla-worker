@@ -75,6 +75,13 @@ func (c *Client) Close() {
 	})
 }
 
+// claude: SetURL updates the reconnect URL (e.g. after a worker rename)
+func (c *Client) SetURL(url string) {
+	c.mu.Lock()
+	c.url = url
+	c.mu.Unlock()
+}
+
 func (c *Client) shutdownEvents() {
 	c.eventsOnce.Do(func() {
 		close(c.events)

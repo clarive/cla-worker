@@ -184,9 +184,15 @@ func (c *Client) Connect(ctx context.Context) (<-chan Message, error) {
 		return c.messages, nil
 	}
 
+	// claude: use a dedicated HTTP client for SSE without the request timeout;
+	// the pubsub httpClient has a 30s timeout which kills the long-lived stream
+	sseHTTP := &http.Client{
+		Transport: c.httpClient.Transport,
+		Timeout:   0,
+	}
 	sseURL := c.address("/pubsub/events")
 	c.sseClient = sse.NewClient(sseURL,
-		sse.WithHTTPClient(c.httpClient),
+		sse.WithHTTPClient(sseHTTP),
 		sse.WithReconnectDelay(c.opts.ReconnectDelay),
 		sse.WithLogger(c.logger),
 	)
@@ -293,6 +299,15 @@ func (c *Client) publishOnce(ctx context.Context, event string, data map[string]
 
 	c.logger.Debug("published event", "event", event)
 	return nil
+}
+
+// claude: SetID updates the worker identity after a server-side rename,
+// so that reconnects and publishes use the new name
+func (c *Client) SetID(id string) {
+	c.opts.ID = id
+	if c.sseClient != nil {
+		c.sseClient.SetURL(c.address("/pubsub/events"))
+	}
 }
 
 func (c *Client) Push(ctx context.Context, key, filename string, r io.Reader) error {
