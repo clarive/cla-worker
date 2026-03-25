@@ -39,7 +39,7 @@ Pre-built binaries are available for:
 |---|---|
 | Linux | amd64, arm64 |
 | macOS | amd64 (Intel), arm64 (Apple Silicon) |
-| Windows | amd64 |
+| Windows | amd64, arm64 |
 
 ## Installation
 

@@ -47,6 +47,7 @@ jobs:
           GOOS=darwin  GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-darwin-amd64 .
           GOOS=darwin  GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-darwin-arm64 .
           GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-windows-amd64.exe .
+          GOOS=windows GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o dist/cla-worker-windows-arm64.exe .
 
       - name: Create archives
         run: |
@@ -54,9 +55,12 @@ jobs:
           for f in cla-worker-linux-* cla-worker-darwin-*; do
             tar czf "${f}.tar.gz" --transform='s|.*|cla-worker|' "${f}"
           done
-          cp cla-worker-windows-amd64.exe cla-worker.exe
-          zip cla-worker-windows-amd64.zip cla-worker.exe
-          rm cla-worker.exe
+          for f in cla-worker-windows-*.exe; do
+            base="${f%.exe}"
+            cp "${f}" cla-worker.exe
+            zip "${base}.zip" cla-worker.exe
+            rm cla-worker.exe
+          done
 
       - name: Generate checksums
         run: |
