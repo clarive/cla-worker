@@ -30,6 +30,10 @@ var rootCmd = &cobra.Command{
 		mergeFlags(cmd)
 		cfg.ResolveTags()
 		cfg.ResolveToken()
+		// claude: apply URL default after ResolveToken so registration URL takes precedence
+		if cfg.URL == "" {
+			cfg.URL = "http://localhost:8080"
+		}
 		return nil
 	},
 	SilenceUsage:  true,

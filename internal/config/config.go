@@ -13,6 +13,7 @@ import (
 type Registration struct {
 	ID    string `yaml:"id"    toml:"id"    mapstructure:"id"`
 	Token string `yaml:"token" toml:"token" mapstructure:"token"`
+	URL   string `yaml:"url"   toml:"url"   mapstructure:"url"`
 }
 
 type Config struct {
@@ -46,6 +47,22 @@ func (c *Config) FilePath() string {
 
 func (c *Config) FileFormat() string {
 	return c.fileFormat
+}
+
+// claude: SetSaveFormat overrides the save file format and adjusts the
+// file path extension accordingly. Used by --save-format flag.
+func (c *Config) SetSaveFormat(format string) {
+	c.fileFormat = format
+	if c.filePath != "" {
+		ext := filepath.Ext(c.filePath)
+		base := strings.TrimSuffix(c.filePath, ext)
+		switch format {
+		case "toml":
+			c.filePath = base + ".toml"
+		case "yaml":
+			c.filePath = base + ".yml"
+		}
+	}
 }
 
 func Load(explicit string) (*Config, error) {
@@ -83,9 +100,6 @@ func Load(explicit string) (*Config, error) {
 }
 
 func (c *Config) setDefaults() {
-	if c.URL == "" {
-		c.URL = "http://localhost:8080"
-	}
 	if c.ChunkSize == 0 {
 		c.ChunkSize = 64 * 1024
 	}
@@ -256,12 +270,18 @@ func (c *Config) ResolveToken() {
 		for _, r := range regs {
 			if r.ID == c.ID {
 				c.Token = r.Token
+				if c.URL == "" && r.URL != "" {
+					c.URL = r.URL
+				}
 				return
 			}
 		}
 	} else if c.ID == "" && len(regs) == 1 {
 		c.ID = regs[0].ID
 		c.Token = regs[0].Token
+		if c.URL == "" && regs[0].URL != "" {
+			c.URL = regs[0].URL
+		}
 	}
 }
 
@@ -269,9 +289,9 @@ func (c *Config) Save(data map[string]interface{}) error {
 	path := c.filePath
 	if path == "" {
 		cwd, _ := os.Getwd()
-		path = filepath.Join(cwd, "cla-worker.yml")
+		path = filepath.Join(cwd, "cla-worker.toml")
 		c.filePath = path
-		c.fileFormat = "yaml"
+		c.fileFormat = "toml"
 	}
 
 	existing, err := loadExisting(path)
@@ -344,8 +364,9 @@ func mergeRegistrations(existing map[string]interface{}, newRegs []Registration)
 				if m, ok := r.(map[string]interface{}); ok {
 					id, _ := m["id"].(string)
 					token, _ := m["token"].(string)
+					url, _ := m["url"].(string)
 					if id != "" {
-						regMap[id] = Registration{ID: id, Token: token}
+						regMap[id] = Registration{ID: id, Token: token, URL: url}
 					}
 				}
 			}
@@ -358,10 +379,14 @@ func mergeRegistrations(existing map[string]interface{}, newRegs []Registration)
 
 	result := make([]interface{}, 0, len(regMap))
 	for _, r := range regMap {
-		result = append(result, map[string]interface{}{
+		entry := map[string]interface{}{
 			"id":    r.ID,
 			"token": r.Token,
-		})
+		}
+		if r.URL != "" {
+			entry["url"] = r.URL
+		}
+		result = append(result, entry)
 	}
 	return result
 }

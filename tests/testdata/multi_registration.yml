@@ -2,7 +2,10 @@ id: worker-2
 registrations:
   - id: worker-1
     token: token-1
+    url: http://host1:8080
   - id: worker-2
     token: token-2
+    url: http://host2:8080
   - id: worker-3
     token: token-3
+    url: http://host3:8080

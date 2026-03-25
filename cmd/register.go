@@ -72,8 +72,12 @@ var registerCmd = &cobra.Command{
 
 		save, _ := cmd.Flags().GetBool("save")
 		if save {
+			// claude: override save format if --save-format was specified
+			if saveFormat, _ := cmd.Flags().GetString("save-format"); saveFormat != "" {
+				cfg.SetSaveFormat(saveFormat)
+			}
 			err := cfg.Save(map[string]interface{}{
-				"registrations": []config.Registration{{ID: cfg.ID, Token: result.Token}},
+				"registrations": []config.Registration{{ID: cfg.ID, Token: result.Token, URL: cfg.URL}},
 			})
 			if err != nil {
 				return fmt.Errorf("saving registration: %w", err)
@@ -88,6 +92,7 @@ var registerCmd = &cobra.Command{
 func init() {
 	registerCmd.Flags().String("passkey", "", "server registration passkey")
 	registerCmd.Flags().Bool("save", false, "save registration to config file")
+	registerCmd.Flags().String("save-format", "", "config format for --save (yaml or toml, default: toml)")
 	registerCmd.Flags().String("url", "", "base server URL")
 	registerCmd.Flags().String("id", "", "worker ID")
 	registerCmd.Flags().String("origin", "", "origin identifier")

@@ -9,5 +9,7 @@ chunk_size: 65536
 registrations:
   - id: worker-1
     token: tok-abc123
+    url: http://example.com:8080
   - id: worker-2
     token: tok-def456
+    url: http://other.example.com:9090
