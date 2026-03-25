@@ -26,11 +26,11 @@ lint:
 	golangci-lint run
 
 cross:
-	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-linux-amd64 .
+	GOOS=linux   GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-linux-x86 .
 	GOOS=linux   GOARCH=arm64 go build $(LDFLAGS) -o dist/cla-worker-linux-arm64 .
-	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-darwin-amd64 .
+	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-darwin-x86 .
 	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o dist/cla-worker-darwin-arm64 .
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-windows-amd64.exe .
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-windows-x86.exe .
 	GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o dist/cla-worker-windows-arm64.exe .
 
 clean:
