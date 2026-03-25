@@ -52,9 +52,11 @@ jobs:
         run: |
           cd dist
           for f in cla-worker-linux-* cla-worker-darwin-*; do
-            tar czf "${f}.tar.gz" "${f}"
+            tar czf "${f}.tar.gz" --transform='s|.*|cla-worker|' "${f}"
           done
-          zip cla-worker-windows-amd64.exe.zip cla-worker-windows-amd64.exe
+          cp cla-worker-windows-amd64.exe cla-worker.exe
+          zip cla-worker-windows-amd64.zip cla-worker.exe
+          rm cla-worker.exe
 
       - name: Generate checksums
         run: |

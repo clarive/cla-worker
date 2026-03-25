@@ -192,20 +192,6 @@ Remove the service:
 cla-worker remove
 ```
 
-### File operations
-
-Push a local file to the server:
-
-```bash
-cla-worker push --file /path/to/file --key my-file-key
-```
-
-Download a file from the server:
-
-```bash
-cla-worker pop --key my-file-key --file /path/to/output
-```
-
 ## Worker Tags
 
 Tags identify a worker's capabilities. When writing Clarive rulebooks, you can

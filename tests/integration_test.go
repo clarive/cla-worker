@@ -3,10 +3,9 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"bytes"
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -519,30 +518,6 @@ func TestIntegration_UnknownCommand(t *testing.T) {
 	results := ms.GetPublishedByEvent("worker.result")
 	require.NotEmpty(t, results)
 	assert.Equal(t, float64(99), results[0].Data["rc"])
-}
-
-func TestIntegration_PushPop_CLI(t *testing.T) {
-	ms := NewMockClariveServer()
-	defer ms.Close()
-	ms.PopData = []byte("popped data")
-
-	ps := pubsub.NewClient(
-		pubsub.WithBaseURL(ms.Server.URL),
-		pubsub.WithID("w1"),
-		pubsub.WithToken("tok"),
-	)
-
-	err := ps.Push(context.Background(), "test-key", "file.txt",
-		bytes.NewReader([]byte("pushed data")))
-	require.NoError(t, err)
-
-	pushed := <-ms.PushReceived
-	assert.Equal(t, "pushed data", string(pushed))
-
-	var buf bytes.Buffer
-	err = ps.Pop(context.Background(), "test-key", &buf)
-	require.NoError(t, err)
-	assert.Equal(t, "popped data", buf.String())
 }
 
 func TestIntegration_ConfigLoadYAML(t *testing.T) {
