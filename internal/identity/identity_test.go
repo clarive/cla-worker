@@ -89,6 +89,13 @@ func TestIsValidHostname(t *testing.T) {
 	assert.False(t, isValidHostname(""))
 }
 
+func TestOsUsername_StripsDomain(t *testing.T) {
+	// claude: on Windows, user.Current().Username returns "DOMAIN\user";
+	// verify our stripping logic works by checking the result has no backslash
+	u := osUsername()
+	assert.NotContains(t, u, `\`, "username should not contain backslash domain prefix, got %q", u)
+}
+
 func TestHostname_PrefersNameOverIP(t *testing.T) {
 	h := Hostname()
 	// claude: hostname should not be an IP address unless no other option exists

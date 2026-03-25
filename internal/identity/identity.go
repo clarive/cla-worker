@@ -48,7 +48,12 @@ func osUsername() string {
 	if err != nil {
 		return "unknown"
 	}
-	return u.Username
+	name := u.Username
+	// claude: strip Windows domain prefix (e.g. "DOMAIN\user" → "user")
+	if i := strings.LastIndex(name, `\`); i >= 0 {
+		name = name[i+1:]
+	}
+	return name
 }
 
 // claude: isIPAddress checks if a string looks like an IPv4 or IPv6 address.
