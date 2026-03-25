@@ -92,6 +92,7 @@ func (w *Worker) Run(ctx context.Context) (int, error) {
 	w.logger.Info("connected to Clarive server",
 		"url", cfg.URL,
 		"workerId", cfg.ID,
+		"version", version.String(),
 	)
 
 	exec := executor.NewOsExecutor()

@@ -1,5 +1,6 @@
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS := -ldflags "-s -w -X github.com/clarive/cla-worker-go/internal/version.Version=$(VERSION)"
+COMMIT  := $(shell git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)
+LDFLAGS := -ldflags "-s -w -X github.com/clarive/cla-worker-go/internal/version.Version=$(VERSION) -X github.com/clarive/cla-worker-go/internal/version.Commit=$(COMMIT)"
 
 .PHONY: build test test-integration test-all bench cover lint cross clean
 
@@ -30,6 +31,7 @@ cross:
 	GOOS=darwin  GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-darwin-amd64 .
 	GOOS=darwin  GOARCH=arm64 go build $(LDFLAGS) -o dist/cla-worker-darwin-arm64 .
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o dist/cla-worker-windows-amd64.exe .
+	GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o dist/cla-worker-windows-arm64.exe .
 
 clean:
 	rm -rf bin/ dist/ coverage.out coverage.html
