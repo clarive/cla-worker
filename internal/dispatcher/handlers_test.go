@@ -165,7 +165,7 @@ func runSingleMessage(t *testing.T, d *Dispatcher, event string, data map[string
 func TestHandleExec_SimpleCommand(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{output: "hello\n", rc: 0}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "echo hello"})
 
@@ -185,7 +185,7 @@ func TestHandleExec_SimpleCommand(t *testing.T) {
 func TestHandleExec_ArrayCommand(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{output: "array result", rc: 0}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{
 		"cmd": []interface{}{"echo", "test"},
@@ -205,7 +205,7 @@ func TestHandleExec_ArrayCommand(t *testing.T) {
 func TestHandleExec_NonZeroExit(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{output: "error output", rc: 42}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "exit 42"})
 
@@ -220,7 +220,7 @@ func TestHandleExec_NonZeroExit(t *testing.T) {
 func TestHandleExec_CommandNotFound(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{err: errors.New("command not found")}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "nonexistent"})
 
@@ -237,7 +237,7 @@ func TestHandleExec_CommandNotFound(t *testing.T) {
 
 func TestHandleExec_MissingCmd(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{})
 
@@ -254,7 +254,7 @@ func TestHandleExec_MissingCmd(t *testing.T) {
 func TestHandleExec_WithChdir(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{output: "/tmp\n", rc: 0}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{
 		"cmd":   "pwd",
@@ -273,7 +273,7 @@ func TestHandleExec_LargeOutput(t *testing.T) {
 	mp := &mockPublisher{}
 	bigOutput := strings.Repeat("x", 1024*1024)
 	me := &mockExecutor{output: bigOutput, rc: 0}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "generate_output"})
 
@@ -288,7 +288,7 @@ func TestHandleExec_LargeOutput(t *testing.T) {
 
 func TestHandlePutFile_Success(t *testing.T) {
 	mp := &mockPublisher{popData: []byte("file data")}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -301,7 +301,7 @@ func TestHandlePutFile_Success(t *testing.T) {
 
 func TestHandlePutFile_MissingFilekey(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
 		"filepath": "/tmp/test.txt",
@@ -321,7 +321,7 @@ func TestHandlePutFile_MissingFilekey(t *testing.T) {
 
 func TestHandlePutFile_MissingFilepath(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
 		"filekey": "fk1",
@@ -341,7 +341,7 @@ func TestHandlePutFile_MissingFilepath(t *testing.T) {
 
 func TestHandlePutFile_PopError(t *testing.T) {
 	mp := &mockPublisher{popErr: errors.New("network error")}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -355,7 +355,7 @@ func TestHandlePutFile_PopError(t *testing.T) {
 func TestHandlePutFile_WriteError(t *testing.T) {
 	mp := &mockPublisher{popData: []byte("data")}
 	mfs := &mockFS{writeErr: errors.New("disk full")}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -369,7 +369,7 @@ func TestHandlePutFile_WriteError(t *testing.T) {
 func TestHandleGetFile_Success(t *testing.T) {
 	mp := &mockPublisher{}
 	mfs := &mockFS{readData: "file content"}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -383,7 +383,7 @@ func TestHandleGetFile_Success(t *testing.T) {
 
 func TestHandleGetFile_MissingFilekey(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
 		"filepath": "/tmp/test.txt",
@@ -401,7 +401,7 @@ func TestHandleGetFile_MissingFilekey(t *testing.T) {
 
 func TestHandleGetFile_MissingFilepath(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
 		"filekey": "fk1",
@@ -420,7 +420,7 @@ func TestHandleGetFile_MissingFilepath(t *testing.T) {
 func TestHandleGetFile_FileNotFound(t *testing.T) {
 	mp := &mockPublisher{}
 	mfs := &mockFS{readErr: errors.New("file not found")}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -434,7 +434,7 @@ func TestHandleGetFile_FileNotFound(t *testing.T) {
 func TestHandleGetFile_PushError(t *testing.T) {
 	mp := &mockPublisher{pushErr: errors.New("push failed")}
 	mfs := &mockFS{readData: "data"}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
 		"filekey":  "fk1",
@@ -447,7 +447,7 @@ func TestHandleGetFile_PushError(t *testing.T) {
 
 func TestHandleCapable_AllMatch(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux", "docker"}, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux", "docker"}, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.capable", map[string]interface{}{
 		"tags": []interface{}{"linux", "docker"},
@@ -459,7 +459,7 @@ func TestHandleCapable_AllMatch(t *testing.T) {
 
 func TestHandleCapable_PartialMatch(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.capable", map[string]interface{}{
 		"tags": []interface{}{"linux", "docker"},
@@ -477,7 +477,7 @@ func TestHandleCapable_PartialMatch(t *testing.T) {
 
 func TestHandleCapable_SubsetMatch(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux", "docker", "go"}, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux", "docker", "go"}, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.capable", map[string]interface{}{
 		"tags": []interface{}{"linux"},
@@ -489,7 +489,7 @@ func TestHandleCapable_SubsetMatch(t *testing.T) {
 
 func TestHandleCapable_EmptyTags(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.capable", map[string]interface{}{
 		"tags": []interface{}{},
@@ -502,7 +502,7 @@ func TestHandleCapable_EmptyTags(t *testing.T) {
 func TestHandleFileExists_Exists(t *testing.T) {
 	mp := &mockPublisher{}
 	mfs := &mockFS{exists: true, isDir: false}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.file_exists", map[string]interface{}{
 		"path": "/tmp/exists.txt",
@@ -519,7 +519,7 @@ func TestHandleFileExists_Exists(t *testing.T) {
 func TestHandleFileExists_NotExists(t *testing.T) {
 	mp := &mockPublisher{}
 	mfs := &mockFS{exists: false}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.file_exists", map[string]interface{}{
 		"path": "/nonexistent.txt",
@@ -536,7 +536,7 @@ func TestHandleFileExists_NotExists(t *testing.T) {
 func TestHandleFileExists_Directory(t *testing.T) {
 	mp := &mockPublisher{}
 	mfs := &mockFS{exists: true, isDir: true}
-	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, mfs, &mockEval{}, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.file_exists", map[string]interface{}{
 		"path": "/tmp",
@@ -553,7 +553,7 @@ func TestHandleFileExists_Directory(t *testing.T) {
 func TestHandleEval_SimpleExpression(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{ret: 42}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "1+1",
@@ -566,7 +566,7 @@ func TestHandleEval_SimpleExpression(t *testing.T) {
 func TestHandleEval_ConsoleLog(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{output: "logged text", ret: nil}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "console.log('test')",
@@ -583,7 +583,7 @@ func TestHandleEval_ConsoleLog(t *testing.T) {
 func TestHandleEval_StashVars(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{ret: 30}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code":  "x + y",
@@ -597,7 +597,7 @@ func TestHandleEval_StashVars(t *testing.T) {
 func TestHandleEval_SyntaxError(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{errStr: "SyntaxError: unexpected token"}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "function(",
@@ -614,7 +614,7 @@ func TestHandleEval_SyntaxError(t *testing.T) {
 func TestHandleEval_RuntimeError(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{errStr: "ReferenceError: x is not defined"}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "x.y",
@@ -631,7 +631,7 @@ func TestHandleEval_RuntimeError(t *testing.T) {
 func TestHandleEval_Timeout(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{errStr: "timeout: execution timeout"}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "while(true){}",
@@ -649,7 +649,7 @@ func TestHandleEval_Timeout(t *testing.T) {
 func TestHandleEval_EvaluatorError(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockEval{err: errors.New("evaluator broken")}
-	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, me, nil, "w1", nil, nil)
 
 	runSingleMessage(t, d, "worker.eval", map[string]interface{}{
 		"code": "1+1",
@@ -667,7 +667,7 @@ func TestHandleEval_EvaluatorError(t *testing.T) {
 
 func TestHandleShutdown_CancelsContext(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	cancelled := false
 	d.SetCancelFunc(func() { cancelled = true })
@@ -683,7 +683,7 @@ func TestHandleShutdown_CancelsContext(t *testing.T) {
 
 func TestPublishError_Format(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	ctx := context.Background()
 	d.publishError(ctx, "oid-1", "worker.exec", "something failed")
@@ -693,6 +693,226 @@ func TestPublishError_Format(t *testing.T) {
 	assert.Equal(t, 99, pubs[0]["rc"])
 	assert.Contains(t, pubs[0]["output"].(string), "worker.exec")
 	assert.Contains(t, pubs[0]["output"].(string), "something failed")
+}
+
+// claude: verb filtering tests
+
+func TestVerbDenied_ExecBlocked(t *testing.T) {
+	mp := &mockPublisher{}
+	// claude: only allow get_file, so exec should be denied
+	allowed := map[string]bool{"get_file": true}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "echo foo"})
+
+	pubs := mp.getPayloads()
+	found := false
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok && rc == 99 {
+			out, _ := p["output"].(string)
+			assert.Contains(t, out, "not allowed")
+			found = true
+		}
+	}
+	assert.True(t, found, "denied verb should produce rc=99 error")
+
+	// claude: should also publish done
+	events := mp.getEvents()
+	assert.Contains(t, events, "worker.done")
+}
+
+func TestVerbDenied_GetFileBlocked(t *testing.T) {
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.get_file", map[string]interface{}{
+		"filekey":  "fk1",
+		"filepath": "/tmp/foo.txt",
+	})
+
+	pubs := mp.getPayloads()
+	found := false
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok && rc == 99 {
+			out, _ := p["output"].(string)
+			assert.Contains(t, out, "not allowed")
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestVerbDenied_PutFileBlocked(t *testing.T) {
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.put_file", map[string]interface{}{
+		"filekey":  "fk1",
+		"filepath": "/tmp/foo.txt",
+	})
+
+	pubs := mp.getPayloads()
+	found := false
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok && rc == 99 {
+			out, _ := p["output"].(string)
+			assert.Contains(t, out, "not allowed")
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestVerbDenied_EvalBlocked(t *testing.T) {
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.eval", map[string]interface{}{"code": "1+1"})
+
+	pubs := mp.getPayloads()
+	found := false
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok && rc == 99 {
+			out, _ := p["output"].(string)
+			assert.Contains(t, out, "not allowed")
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestVerbDenied_FileExistsBlocked(t *testing.T) {
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true}
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.file_exists", map[string]interface{}{"path": "/tmp"})
+
+	pubs := mp.getPayloads()
+	found := false
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok && rc == 99 {
+			out, _ := p["output"].(string)
+			assert.Contains(t, out, "not allowed")
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestVerbAllowed_NilMeansAllAllowed(t *testing.T) {
+	// claude: nil allowedVerbs means no restrictions
+	mp := &mockPublisher{}
+	d := New(mp, &mockExecutor{output: "ok", rc: 0}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
+
+	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "echo ok"})
+
+	pubs := mp.getPayloads()
+	for _, p := range pubs {
+		if p["_event"] == "worker.result" {
+			assert.Equal(t, 0, p["rc"])
+			assert.Equal(t, "ok", p["output"])
+		}
+	}
+}
+
+func TestVerbAllowed_ExplicitlyAllowed(t *testing.T) {
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true, "get_file": true}
+	d := New(mp, &mockExecutor{output: "ok", rc: 0}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.exec", map[string]interface{}{"cmd": "echo ok"})
+
+	pubs := mp.getPayloads()
+	for _, p := range pubs {
+		if p["_event"] == "worker.result" {
+			assert.Equal(t, 0, p["rc"])
+		}
+	}
+}
+
+func TestVerbDenied_CapableAlwaysAllowed(t *testing.T) {
+	// claude: worker.capable should always work regardless of verb restrictions
+	mp := &mockPublisher{}
+	allowed := map[string]bool{"exec": true} // no capable listed, but it's not controlled
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.capable", map[string]interface{}{
+		"tags": []interface{}{"linux"},
+	})
+
+	events := mp.getEvents()
+	assert.Contains(t, events, "worker.capable.reply")
+}
+
+func TestVerbDenied_ShutdownAlwaysAllowed(t *testing.T) {
+	// claude: worker.shutdown should always work regardless of verb restrictions
+	mp := &mockPublisher{}
+	allowed := map[string]bool{} // nothing allowed
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	cancelled := false
+	d.SetCancelFunc(func() { cancelled = true })
+
+	runSingleMessage(t, d, "worker.shutdown", map[string]interface{}{"reason": "test"})
+
+	assert.True(t, cancelled)
+	assert.Equal(t, 10, d.ShutdownCode())
+}
+
+func TestVerbDenied_ReadyAlwaysAllowed(t *testing.T) {
+	// claude: worker.ready should always work regardless of verb restrictions
+	mp := &mockPublisher{}
+	allowed := map[string]bool{} // nothing allowed
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+
+	runSingleMessage(t, d, "worker.ready", map[string]interface{}{})
+
+	// ready produces only an ack, no error
+	pubs := mp.getPayloads()
+	for _, p := range pubs {
+		if rc, ok := p["rc"]; ok {
+			assert.NotEqual(t, 99, rc, "worker.ready should not produce error")
+		}
+	}
+}
+
+func TestVerbDenied_AllDenied(t *testing.T) {
+	// claude: empty allowed map denies all controlled verbs
+	allowed := map[string]bool{}
+
+	verbs := []struct {
+		event string
+		data  map[string]interface{}
+	}{
+		{"worker.exec", map[string]interface{}{"cmd": "echo foo"}},
+		{"worker.eval", map[string]interface{}{"code": "1+1"}},
+		{"worker.get_file", map[string]interface{}{"filekey": "fk", "filepath": "/tmp/x"}},
+		{"worker.put_file", map[string]interface{}{"filekey": "fk", "filepath": "/tmp/x"}},
+		{"worker.file_exists", map[string]interface{}{"path": "/tmp"}},
+	}
+
+	for _, v := range verbs {
+		t.Run(v.event, func(t *testing.T) {
+			mp := &mockPublisher{}
+			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", allowed, nil)
+			runSingleMessage(t, d, v.event, v.data)
+
+			pubs := mp.getPayloads()
+			found := false
+			for _, p := range pubs {
+				if rc, ok := p["rc"]; ok && rc == 99 {
+					out, _ := p["output"].(string)
+					assert.Contains(t, out, "not allowed")
+					found = true
+				}
+			}
+			assert.True(t, found, "%s should be denied", v.event)
+		})
+	}
 }
 
 // -- Dummy unused import suppression --

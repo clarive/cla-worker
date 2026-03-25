@@ -32,6 +32,8 @@ type Config struct {
 	Logfile       string         `yaml:"logfile"        toml:"logfile"        mapstructure:"logfile"`
 	Pidfile       string         `yaml:"pidfile"        toml:"pidfile"        mapstructure:"pidfile"`
 	ChunkSize     int            `yaml:"chunk_size"     toml:"chunk_size"     mapstructure:"chunk_size"`
+	AllowVerbs    []string       `yaml:"allow_verbs"    toml:"allow_verbs"    mapstructure:"allow_verbs"`
+	DenyVerbs     []string       `yaml:"deny_verbs"     toml:"deny_verbs"     mapstructure:"deny_verbs"`
 	Registrations []Registration `yaml:"registrations"  toml:"registrations"  mapstructure:"registrations"`
 
 	filePath   string
@@ -151,17 +153,20 @@ func parseYAML(data []byte, format string) (*Config, error) {
 		return nil, err
 	}
 
-	// Check if tags is a string before strict unmarshal
-	var tagsStr string
-	isTagsString := false
-	if tags, ok := raw["tags"]; ok {
-		if s, ok := tags.(string); ok {
-			isTagsString = true
-			tagsStr = s
-			delete(raw, "tags")
-			// Re-marshal without the tags string for struct unmarshal
-			data, _ = yaml.Marshal(raw)
+	// claude: check if list fields are strings before strict unmarshal
+	strFields := map[string]string{}
+	needRemarshal := false
+	for _, field := range []string{"tags", "allow_verbs", "deny_verbs"} {
+		if v, ok := raw[field]; ok {
+			if s, ok := v.(string); ok {
+				strFields[field] = s
+				delete(raw, field)
+				needRemarshal = true
+			}
 		}
+	}
+	if needRemarshal {
+		data, _ = yaml.Marshal(raw)
 	}
 
 	cfg := &Config{fileFormat: format}
@@ -169,8 +174,14 @@ func parseYAML(data []byte, format string) (*Config, error) {
 		return nil, err
 	}
 
-	if isTagsString {
-		cfg.Tags = splitTags(tagsStr)
+	if s, ok := strFields["tags"]; ok {
+		cfg.Tags = splitTags(s)
+	}
+	if s, ok := strFields["allow_verbs"]; ok {
+		cfg.AllowVerbs = splitTags(s)
+	}
+	if s, ok := strFields["deny_verbs"]; ok {
+		cfg.DenyVerbs = splitTags(s)
 	}
 
 	return cfg, nil
@@ -197,6 +208,36 @@ func splitTags(s string) []string {
 		}
 	}
 	return result
+}
+
+// AllControlledVerbs lists the verbs that can be allowed/denied.
+var AllControlledVerbs = []string{"exec", "eval", "get_file", "put_file", "file_exists"}
+
+// ResolveAllowedVerbs computes the final set of allowed verbs.
+// If AllowVerbs is empty, all controlled verbs are allowed.
+// DenyVerbs are then removed from the allowed set.
+func (c *Config) ResolveAllowedVerbs() map[string]bool {
+	allowed := make(map[string]bool)
+
+	if len(c.AllowVerbs) == 0 {
+		for _, v := range AllControlledVerbs {
+			allowed[v] = true
+		}
+	} else {
+		for _, v := range c.AllowVerbs {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				allowed[v] = true
+			}
+		}
+	}
+
+	for _, v := range c.DenyVerbs {
+		v = strings.TrimSpace(v)
+		delete(allowed, v)
+	}
+
+	return allowed
 }
 
 func (c *Config) ResolveTags() {

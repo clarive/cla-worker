@@ -16,11 +16,15 @@ type Dispatcher struct {
 	evaluator    JSEvaluator
 	tags         []string
 	workerID     string
+	allowedVerbs map[string]bool
 	logger       *slog.Logger
 	wg           sync.WaitGroup
 	cancelFunc   context.CancelFunc
 	shutdownCode int
 	seenConnect  bool
+	// claude: mutex-protected cancel func for the currently running exec command
+	execMu     sync.Mutex
+	execCancel context.CancelFunc
 }
 
 func New(
@@ -30,19 +34,21 @@ func New(
 	evaluator JSEvaluator,
 	tags []string,
 	workerID string,
+	allowedVerbs map[string]bool,
 	logger *slog.Logger,
 ) *Dispatcher {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Dispatcher{
-		publisher:  publisher,
-		executor:   executor,
-		filesystem: filesystem,
-		evaluator:  evaluator,
-		tags:       tags,
-		workerID:   workerID,
-		logger:     logger,
+		publisher:    publisher,
+		executor:     executor,
+		filesystem:   filesystem,
+		evaluator:    evaluator,
+		tags:         tags,
+		workerID:     workerID,
+		allowedVerbs: allowedVerbs,
+		logger:       logger,
 	}
 }
 
@@ -72,6 +78,25 @@ func (d *Dispatcher) Run(ctx context.Context, messages <-chan pubsub.Message) {
 			}(msg)
 		}
 	}
+}
+
+// claude: verbFromEvent extracts the short verb name from a worker event.
+// e.g. "worker.exec" -> "exec", "worker.get_file" -> "get_file"
+func verbFromEvent(event string) string {
+	if len(event) > 7 && event[:7] == "worker." {
+		return event[7:]
+	}
+	return ""
+}
+
+// claude: isVerbAllowed checks whether the given event's verb is permitted.
+// If allowedVerbs is nil (no restrictions configured), everything is allowed.
+func (d *Dispatcher) isVerbAllowed(event string) bool {
+	if d.allowedVerbs == nil {
+		return true
+	}
+	verb := verbFromEvent(event)
+	return d.allowedVerbs[verb]
 }
 
 func (d *Dispatcher) isNotificationEvent(event string) bool {
@@ -105,20 +130,33 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg pubsub.Message) {
 	switch msg.Event {
 	case "worker.ready":
 		d.handleReady(ctx, msg.OID, msg.Data)
-	case "worker.exec":
-		d.handleExec(ctx, msg.OID, msg.Data)
-	case "worker.eval":
-		d.handleEval(ctx, msg.OID, msg.Data)
-	case "worker.put_file":
-		d.handlePutFile(ctx, msg.OID, msg.Data)
-	case "worker.get_file":
-		d.handleGetFile(ctx, msg.OID, msg.Data)
+	case "worker.exec", "worker.eval", "worker.put_file", "worker.get_file", "worker.file_exists":
+		if !d.isVerbAllowed(msg.Event) {
+			verb := verbFromEvent(msg.Event)
+			d.logger.Warn("verb denied by configuration", "verb", verb)
+			d.publishError(ctx, msg.OID, msg.Event,
+				fmt.Sprintf("verb %q is not allowed on this worker", verb))
+			d.publishDone(ctx, msg.OID)
+			return
+		}
+		switch msg.Event {
+		case "worker.exec":
+			d.handleExec(ctx, msg.OID, msg.Data)
+		case "worker.eval":
+			d.handleEval(ctx, msg.OID, msg.Data)
+		case "worker.put_file":
+			d.handlePutFile(ctx, msg.OID, msg.Data)
+		case "worker.get_file":
+			d.handleGetFile(ctx, msg.OID, msg.Data)
+		case "worker.file_exists":
+			d.handleFileExists(ctx, msg.OID, msg.Data)
+		}
 	case "worker.capable":
 		d.handleCapable(ctx, msg.OID, msg.Data)
-	case "worker.file_exists":
-		d.handleFileExists(ctx, msg.OID, msg.Data)
 	case "worker.shutdown":
 		d.handleShutdown(ctx, msg.OID, msg.Data)
+	case "worker.exec.cancel":
+		d.handleExecCancel(ctx, msg.OID, msg.Data)
 	case "worker.connect", "worker.disconnect", "worker.register", "worker.unregister":
 		// claude: server-side notification events — already logged above
 	default:

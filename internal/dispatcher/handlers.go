@@ -19,8 +19,31 @@ func (d *Dispatcher) handleExec(ctx context.Context, msgID string, data map[stri
 
 	chdir, _ := data["chdir"].(string)
 
-	output, rc, err := d.executor.Execute(ctx, cmd, chdir)
+	// claude: create a cancellable child context so cancel_repl can kill this command
+	execCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	d.execMu.Lock()
+	d.execCancel = cancel
+	d.execMu.Unlock()
+
+	output, rc, err := d.executor.Execute(execCtx, cmd, chdir)
+
+	// claude: clear the stored cancel func now that exec is done
+	d.execMu.Lock()
+	d.execCancel = nil
+	d.execMu.Unlock()
+
 	if err != nil {
+		if execCtx.Err() == context.Canceled {
+			d.publishResult(ctx, msgID, map[string]interface{}{
+				"ret":    "",
+				"rc":     130,
+				"output": "command cancelled by user",
+			})
+			d.publishDone(ctx, msgID)
+			return
+		}
 		d.publishError(ctx, msgID, "worker.exec", err.Error())
 		d.publishDone(ctx, msgID)
 		return
@@ -32,6 +55,19 @@ func (d *Dispatcher) handleExec(ctx context.Context, msgID string, data map[stri
 		"output": output,
 	})
 	d.publishDone(ctx, msgID)
+}
+
+func (d *Dispatcher) handleExecCancel(ctx context.Context, msgID string, data map[string]interface{}) {
+	d.execMu.Lock()
+	cancel := d.execCancel
+	d.execMu.Unlock()
+
+	if cancel != nil {
+		d.logger.Info("cancelling running exec command")
+		cancel()
+	} else {
+		d.logger.Info("cancel requested but no exec command is running")
+	}
 }
 
 func (d *Dispatcher) handleEval(ctx context.Context, msgID string, data map[string]interface{}) {

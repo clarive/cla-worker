@@ -22,7 +22,7 @@ func TestDispatcher_RoutesAllCommands(t *testing.T) {
 	for _, cmd := range commands {
 		t.Run(cmd, func(t *testing.T) {
 			mp := &mockPublisher{}
-			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil)
+			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, []string{"linux"}, "w1", nil, nil)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
@@ -53,7 +53,7 @@ func TestDispatcher_RoutesAllCommands(t *testing.T) {
 
 func TestDispatcher_UnknownCommand(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -76,7 +76,7 @@ func TestDispatcher_UnknownCommand(t *testing.T) {
 
 func TestDispatcher_ShutdownNoAck(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 	cancelled := false
 	d.SetCancelFunc(func() { cancelled = true })
 
@@ -102,7 +102,7 @@ func TestDispatcher_ShutdownNoAck(t *testing.T) {
 func TestDispatcher_ConcurrentMessages(t *testing.T) {
 	mp := &mockPublisher{}
 	me := &mockExecutor{delay: 10 * time.Millisecond}
-	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, me, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -142,7 +142,7 @@ func TestDispatcher_NotificationEventsIgnored(t *testing.T) {
 	for _, evt := range notifications {
 		t.Run(evt, func(t *testing.T) {
 			mp := &mockPublisher{}
-			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+			d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
@@ -170,7 +170,7 @@ func TestDispatcher_NotificationEventsIgnored(t *testing.T) {
 func TestDispatcher_NotificationEventsDoNotPublishError(t *testing.T) {
 	// Specifically test that worker.connect does not cause an "invalid command" error
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -198,7 +198,7 @@ func TestDispatcher_NotificationEventsDoNotPublishError(t *testing.T) {
 
 func TestDispatcher_ContextCancel(t *testing.T) {
 	mp := &mockPublisher{}
-	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil)
+	d := New(mp, &mockExecutor{}, &mockFS{}, &mockEval{}, nil, "w1", nil, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

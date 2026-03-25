@@ -98,7 +98,8 @@ func (w *Worker) Run(ctx context.Context) (int, error) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(30*time.Second, w.logger)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, cfg.Tags, cfg.ID, w.logger)
+	allowedVerbs := cfg.ResolveAllowedVerbs()
+	disp := dispatcher.New(ps, exec, fs, eval, cfg.Tags, cfg.ID, allowedVerbs, w.logger)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)

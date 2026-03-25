@@ -150,7 +150,7 @@ func TestIntegration_ConnectAndExec(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	go func() {
@@ -192,7 +192,7 @@ func TestIntegration_MultipleCommands(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux"}, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux"}, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -228,7 +228,7 @@ func TestIntegration_PutFile(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -265,7 +265,7 @@ func TestIntegration_GetFile(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -299,7 +299,7 @@ func TestIntegration_Eval(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -330,7 +330,7 @@ func TestIntegration_Capable(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -365,7 +365,7 @@ func TestIntegration_FileExists(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -395,7 +395,7 @@ func TestIntegration_Shutdown(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -437,7 +437,7 @@ func TestIntegration_NotificationEventsIgnored(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, []string{"linux", "test"}, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -482,7 +482,7 @@ func TestIntegration_InvalidJSON(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)
@@ -511,7 +511,7 @@ func TestIntegration_UnknownCommand(t *testing.T) {
 	fs := filetransfer.NewOsFileSystem()
 	eval := &jsEvalAdapter{eval: jseval.NewEvaluator(5*time.Second, nil)}
 
-	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil)
+	disp := dispatcher.New(ps, exec, fs, eval, nil, "test-worker", nil, nil)
 	disp.SetCancelFunc(cancel)
 
 	disp.Run(ctx, messages)

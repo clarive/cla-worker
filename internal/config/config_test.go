@@ -248,3 +248,78 @@ func TestDetectFormat_Fallback(t *testing.T) {
 	assert.Equal(t, "toml", detectFormat("foo.conf", "toml"))
 	assert.Equal(t, "yaml", detectFormat("foo.conf", ""))
 }
+
+// claude: verb control config tests
+
+func TestLoad_DenyVerbsYAML(t *testing.T) {
+	cfg, err := Load(testdataPath("deny_exec_config.yml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"exec"}, cfg.DenyVerbs)
+	assert.Nil(t, cfg.AllowVerbs)
+}
+
+func TestLoad_AllowVerbsOnlyYAML(t *testing.T) {
+	cfg, err := Load(testdataPath("allow_exec_only_config.yml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"exec"}, cfg.AllowVerbs)
+	assert.Nil(t, cfg.DenyVerbs)
+}
+
+func TestLoad_DenyVerbsTOML(t *testing.T) {
+	cfg, err := Load(testdataPath("deny_verbs_config.toml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"exec", "put_file"}, cfg.DenyVerbs)
+}
+
+func TestLoad_AllowVerbsAsString(t *testing.T) {
+	cfg, err := Load(testdataPath("allow_verbs_string_config.yml"))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"exec", "get_file"}, cfg.AllowVerbs)
+}
+
+func TestResolveAllowedVerbs_DefaultAllowsAll(t *testing.T) {
+	cfg := &Config{}
+	allowed := cfg.ResolveAllowedVerbs()
+	for _, v := range AllControlledVerbs {
+		assert.True(t, allowed[v], "verb %s should be allowed by default", v)
+	}
+}
+
+func TestResolveAllowedVerbs_AllowOnly(t *testing.T) {
+	cfg := &Config{AllowVerbs: []string{"exec"}}
+	allowed := cfg.ResolveAllowedVerbs()
+	assert.True(t, allowed["exec"])
+	assert.False(t, allowed["get_file"])
+	assert.False(t, allowed["put_file"])
+	assert.False(t, allowed["eval"])
+	assert.False(t, allowed["file_exists"])
+}
+
+func TestResolveAllowedVerbs_DenyOnly(t *testing.T) {
+	cfg := &Config{DenyVerbs: []string{"exec", "put_file"}}
+	allowed := cfg.ResolveAllowedVerbs()
+	assert.False(t, allowed["exec"])
+	assert.False(t, allowed["put_file"])
+	assert.True(t, allowed["get_file"])
+	assert.True(t, allowed["eval"])
+	assert.True(t, allowed["file_exists"])
+}
+
+func TestResolveAllowedVerbs_DenyOverridesAllow(t *testing.T) {
+	cfg := &Config{
+		AllowVerbs: []string{"exec", "get_file"},
+		DenyVerbs:  []string{"exec"},
+	}
+	allowed := cfg.ResolveAllowedVerbs()
+	assert.False(t, allowed["exec"], "deny should override allow")
+	assert.True(t, allowed["get_file"])
+	assert.False(t, allowed["put_file"])
+}
+
+func TestResolveAllowedVerbs_EmptyDenyNoEffect(t *testing.T) {
+	cfg := &Config{DenyVerbs: []string{}}
+	allowed := cfg.ResolveAllowedVerbs()
+	for _, v := range AllControlledVerbs {
+		assert.True(t, allowed[v])
+	}
+}

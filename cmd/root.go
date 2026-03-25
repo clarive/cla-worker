@@ -48,6 +48,8 @@ func init() {
 	pf.CountP("verbose", "v", "increase verbosity")
 	pf.String("logfile", "", "path to log file")
 	pf.String("pidfile", "", "path to PID file")
+	pf.StringSlice("allow-verbs", nil, "allowed verbs (exec,eval,get_file,put_file,file_exists)")
+	pf.StringSlice("deny-verbs", nil, "denied verbs (exec,eval,get_file,put_file,file_exists)")
 }
 
 func mergeFlags(cmd *cobra.Command) {
@@ -107,6 +109,14 @@ func mergeFlags(cmd *cobra.Command) {
 	if flags.Changed("name") {
 		v, _ := flags.GetString("name")
 		cfg.Name = v
+	}
+	if flags.Changed("allow-verbs") {
+		v, _ := flags.GetStringSlice("allow-verbs")
+		cfg.AllowVerbs = v
+	}
+	if flags.Changed("deny-verbs") {
+		v, _ := flags.GetStringSlice("deny-verbs")
+		cfg.DenyVerbs = v
 	}
 }
 

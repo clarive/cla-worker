@@ -1,0 +1,4 @@
+id = "worker-deny"
+token = "tok-deny"
+url = "http://example.com:8080"
+deny_verbs = ["exec", "put_file"]
