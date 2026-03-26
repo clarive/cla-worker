@@ -10,6 +10,7 @@ import (
 
 	"github.com/clarive/cla-worker-go/internal/daemon"
 	"github.com/clarive/cla-worker-go/internal/identity"
+	svc "github.com/clarive/cla-worker-go/internal/service"
 	"github.com/clarive/cla-worker-go/internal/worker"
 )
 
@@ -35,6 +36,12 @@ var runCmd = &cobra.Command{
 			return runForked()
 		}
 
+		// claude: when started by Windows SCM (or systemd/launchd), go
+		// through the service framework so it properly signals "running"
+		if !svc.Interactive() {
+			return runAsService()
+		}
+
 		return runForeground()
 	},
 }
@@ -56,6 +63,36 @@ func logLevel() slog.Level {
 		return slog.LevelDebug
 	}
 	return slog.LevelInfo
+}
+
+func runAsService() error {
+	var logger *slog.Logger
+	if cfg.Logfile != "" {
+		logFile, err := os.OpenFile(cfg.Logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return fmt.Errorf("opening log file: %w", err)
+		}
+		defer logFile.Close()
+		logger = slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
+			Level: logLevel(),
+		}))
+	} else {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			Level: logLevel(),
+		}))
+	}
+
+	code, err := svc.RunAsService(func(ctx context.Context) (int, error) {
+		w := worker.New(cfg, logger)
+		return w.Run(ctx)
+	}, logger)
+	if err != nil {
+		return fmt.Errorf("service error: %w", err)
+	}
+	if code != 0 {
+		os.Exit(code)
+	}
+	return nil
 }
 
 func runForeground() error {
