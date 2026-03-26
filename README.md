@@ -37,16 +37,25 @@ Pre-built binaries are available for:
 
 | OS | Architecture |
 |---|---|
-| Linux | amd64, arm64 |
-| macOS | amd64 (Intel), arm64 (Apple Silicon) |
-| Windows | amd64, arm64 |
+| Linux | x64, arm64 |
+| macOS | x64 (Intel), arm64 (Apple Silicon) |
+| Windows | x64, arm64 |
 
 ## Installation
 
-Download the latest release from the
-[Releases](https://github.com/clarive/cla-worker-go/releases) page and place
-the binary anywhere in your `PATH`.
+Download the binary for your platform from the
+[latest release](https://github.com/clarive/cla-worker/releases/latest):
 
+| Platform | Download |
+|---|---|
+| Linux x64 | [cla-worker-linux-x64.tar.gz](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-linux-x64.tar.gz) |
+| Linux arm64 | [cla-worker-linux-arm64.tar.gz](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-linux-arm64.tar.gz) |
+| macOS x64 (Intel) | [cla-worker-darwin-x64.tar.gz](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-darwin-x64.tar.gz) |
+| macOS arm64 (Apple Silicon) | [cla-worker-darwin-arm64.tar.gz](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-darwin-arm64.tar.gz) |
+| Windows x64 | [cla-worker-windows-x64.zip](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-windows-x64.zip) |
+| Windows arm64 | [cla-worker-windows-arm64.zip](https://github.com/clarive/cla-worker/releases/latest/download/cla-worker-windows-arm64.zip) |
+
+Extract the archive and place the `cla-worker` binary anywhere in your `PATH`.
 The worker is a single static binary with no prerequisites. The only requirement
 is that the host **can reach the Clarive server** over HTTP/HTTPS.
 
