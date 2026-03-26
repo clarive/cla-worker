@@ -8,4 +8,6 @@ coverage.html
 *.prof
 *.yml
 cla-worker
+cla-worker.yml
+cla-worker.toml
 .agent/
