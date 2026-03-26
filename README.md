@@ -105,7 +105,22 @@ tags = ["java", "nodejs"]
 | `logfile` | Path to log file (daemon mode) |
 | `pidfile` | Path to PID file (daemon mode) |
 | `chunk_size` | File transfer chunk size in bytes (default: 65536) |
-| `registrations` | List of `{id, token}` pairs for multi-registration setups |
+| `registrations` | List of `{id, token, url}` entries for multi-registration setups |
+
+### Worker ID restrictions
+
+The worker ID is used in URL query parameters, file paths (pidfile, logfile)
+and as a service identifier. Avoid the following characters:
+
+- **Spaces** — break command-line arguments and URL parameters
+- **Slashes** (`/` and `\`) — break file paths used for pidfiles and logfiles
+- **URL-reserved characters** (`?`, `&`, `#`, `%`) — break server communication
+- **Quotes** (`"`, `'`, `` ` ``) — break shell commands and config file parsing
+- **Newlines, tabs or other control characters** — break config parsing
+
+Safe characters: letters, digits, hyphens (`-`), underscores (`_`), dots (`.`)
+and the at sign (`@`). The default auto-generated format `user@hostname`
+(e.g. `joe@server1`) uses only safe characters.
 
 ## Commands
 
@@ -180,10 +195,18 @@ cla-worker stop
 
 ### OS service
 
-Install as a system service (systemd, launchd, Windows Service):
+Install as a system service (systemd on Linux, launchd on macOS, Windows
+Service on Windows):
 
 ```bash
-cla-worker install
+cla-worker install -c /path/to/cla-worker.toml
+```
+
+Start/stop the installed service:
+
+```bash
+cla-worker start
+cla-worker stop
 ```
 
 Remove the service:
@@ -191,6 +214,9 @@ Remove the service:
 ```bash
 cla-worker remove
 ```
+
+See [Linux systemd service](#linux-systemd-service) and
+[Windows service](#windows-service) below for detailed platform guides.
 
 ## Worker Tags
 
@@ -234,6 +260,109 @@ Debug mode is also supported in daemon mode:
 ```bash
 cla-worker run --daemon -v
 ```
+
+## Linux systemd service
+
+On Linux, `cla-worker install` creates a systemd unit file so the worker
+starts on boot.
+
+```bash
+# Place binary and register
+sudo mkdir -p /opt/cla-worker
+sudo cp cla-worker /opt/cla-worker/
+sudo chmod +x /opt/cla-worker/cla-worker
+cd /opt/cla-worker
+sudo ./cla-worker register --url https://clarive.example.com --passkey YOUR_PASSKEY --save
+
+# Install and start the service
+sudo ./cla-worker install -c /opt/cla-worker/cla-worker.toml
+sudo systemctl enable cla-worker
+sudo systemctl start cla-worker
+```
+
+Manage with standard systemctl commands:
+
+```bash
+sudo systemctl status cla-worker     # check status
+sudo journalctl -u cla-worker -f     # view logs
+sudo systemctl restart cla-worker    # restart after config changes
+sudo systemctl stop cla-worker       # stop
+```
+
+To run under a dedicated user, create a system user and update the unit file:
+
+```bash
+sudo useradd -r -s /bin/false cla-worker
+sudo chown -R cla-worker:cla-worker /opt/cla-worker
+```
+
+Add `User=cla-worker` and `Group=cla-worker` under `[Service]` in
+`/etc/systemd/system/cla-worker.service`, then:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart cla-worker
+```
+
+Remove the service:
+
+```bash
+sudo systemctl stop cla-worker
+sudo systemctl disable cla-worker
+sudo /opt/cla-worker/cla-worker remove
+```
+
+## Windows service
+
+On Windows, `cla-worker install` registers the worker as a Windows Service.
+Run all commands from an **Administrator** prompt.
+
+```powershell
+# Place binary and register
+mkdir C:\cla-worker
+copy cla-worker.exe C:\cla-worker\
+cd C:\cla-worker
+.\cla-worker.exe register --url https://clarive.example.com --passkey YOUR_PASSKEY --save
+
+# Install and start the service
+.\cla-worker.exe install -c C:\cla-worker\cla-worker.toml
+.\cla-worker.exe start
+```
+
+The service is named **cla-worker** (display name **Clarive Worker**) and
+starts automatically on boot.
+
+Manage with `sc` or the Services GUI (`services.msc`):
+
+```powershell
+sc query cla-worker                            # check status
+sc stop cla-worker                             # stop
+sc stop cla-worker && sc start cla-worker      # restart
+```
+
+View logs:
+
+```powershell
+Get-Content C:\cla-worker\cla-worker.log -Tail 50 -Wait
+```
+
+To run under a specific user instead of Local System:
+
+```powershell
+sc config cla-worker obj= "DOMAIN\username" password= "password"
+sc stop cla-worker
+sc start cla-worker
+```
+
+Remove the service:
+
+```powershell
+sc stop cla-worker
+C:\cla-worker\cla-worker.exe remove
+```
+
+If the service fails to start, check the log file, verify the config path,
+and look for errors in the Windows Event Viewer (Application log).
 
 ## Worker Security
 
