@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/kardianos/service"
 )
@@ -32,6 +33,10 @@ func Install(workerID string, configPath string) error {
 		svcConfig.Arguments = append(svcConfig.Arguments, "--id", workerID)
 	}
 	if configPath != "" {
+		// claude: resolve to absolute path so systemd/launchd can find it
+		if abs, err := filepath.Abs(configPath); err == nil {
+			configPath = abs
+		}
 		svcConfig.Arguments = append(svcConfig.Arguments, "--config", configPath)
 	}
 

@@ -37,6 +37,8 @@ jobs:
           go-version: "1.24"
 
       - name: Build binaries
+        env:
+          CGO_ENABLED: "0"
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           COMMIT=$(git rev-parse --short=7 HEAD)

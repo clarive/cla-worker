@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -389,6 +390,72 @@ func mergeRegistrations(existing map[string]interface{}, newRegs []Registration)
 		result = append(result, entry)
 	}
 	return result
+}
+
+// claude: SystemConfigDir returns the system-level configuration directory.
+func SystemConfigDir() string {
+	if runtime.GOOS == "windows" {
+		if pd := os.Getenv("ProgramData"); pd != "" {
+			return filepath.Join(pd, "cla-worker")
+		}
+		return `C:\ProgramData\cla-worker`
+	}
+	return "/etc"
+}
+
+// claude: SystemConfigPath returns the path to the system-level config file.
+func SystemConfigPath() string {
+	return filepath.Join(SystemConfigDir(), "cla-worker.toml")
+}
+
+// claude: InstallSystemConfig copies the current configuration to the system
+// config location, setting top-level id and url fields for service startup.
+// Returns the path to the installed system config file.
+func (c *Config) InstallSystemConfig() (string, error) {
+	destPath := SystemConfigPath()
+
+	dir := filepath.Dir(destPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("creating config directory %s: %w", dir, err)
+	}
+
+	existing := make(map[string]interface{})
+	if c.filePath != "" {
+		data, err := os.ReadFile(c.filePath)
+		if err != nil {
+			return "", fmt.Errorf("reading source config %s: %w", c.filePath, err)
+		}
+		ext := strings.ToLower(filepath.Ext(c.filePath))
+		switch ext {
+		case ".toml":
+			if err := toml.Unmarshal(data, &existing); err != nil {
+				return "", fmt.Errorf("parsing source config: %w", err)
+			}
+		default:
+			if err := yaml.Unmarshal(data, &existing); err != nil {
+				return "", fmt.Errorf("parsing source config: %w", err)
+			}
+		}
+	}
+
+	if c.ID != "" {
+		existing["id"] = c.ID
+	}
+	if c.URL != "" {
+		existing["url"] = c.URL
+	}
+
+	buf := &strings.Builder{}
+	enc := toml.NewEncoder(buf)
+	if err := enc.Encode(existing); err != nil {
+		return "", fmt.Errorf("encoding config: %w", err)
+	}
+
+	if err := os.WriteFile(destPath, []byte(buf.String()), 0644); err != nil {
+		return "", fmt.Errorf("writing system config %s: %w", destPath, err)
+	}
+
+	return destPath, nil
 }
 
 func detectFormat(path, fallback string) string {
