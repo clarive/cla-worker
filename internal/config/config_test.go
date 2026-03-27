@@ -396,6 +396,92 @@ func TestConfig_SetSaveFormat(t *testing.T) {
 	assert.Equal(t, "/tmp/cla-worker.yml", cfg.FilePath())
 }
 
+func TestConfig_MaxLogSize_Default(t *testing.T) {
+	cfg := &Config{}
+	cfg.setDefaults()
+	assert.Equal(t, 20, cfg.MaxLogSize)
+}
+
+func TestRotateLogfile_EmptyPath(t *testing.T) {
+	cfg := &Config{Logfile: "", MaxLogSize: 20}
+	err := cfg.RotateLogfile()
+	assert.NoError(t, err)
+}
+
+func TestRotateLogfile_MissingFile(t *testing.T) {
+	cfg := &Config{Logfile: "/nonexistent/path/foo.log", MaxLogSize: 20}
+	err := cfg.RotateLogfile()
+	assert.NoError(t, err)
+}
+
+func TestRotateLogfile_ZeroMaxSize(t *testing.T) {
+	cfg := &Config{Logfile: "/tmp/foo.log", MaxLogSize: 0}
+	err := cfg.RotateLogfile()
+	assert.NoError(t, err)
+}
+
+func TestRotateLogfile_UnderLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+	err := os.WriteFile(logPath, []byte("small"), 0644)
+	require.NoError(t, err)
+
+	cfg := &Config{Logfile: logPath, MaxLogSize: 1}
+	err = cfg.RotateLogfile()
+	assert.NoError(t, err)
+
+	// claude: original file should still exist, no backup created
+	_, err = os.Stat(logPath)
+	assert.NoError(t, err)
+	_, err = os.Stat(logPath + ".1")
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestRotateLogfile_OverLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	// claude: create a file just over 1 MB
+	data := make([]byte, 1*1024*1024+1)
+	err := os.WriteFile(logPath, data, 0644)
+	require.NoError(t, err)
+
+	cfg := &Config{Logfile: logPath, MaxLogSize: 1}
+	err = cfg.RotateLogfile()
+	assert.NoError(t, err)
+
+	// claude: original should be gone, backup should exist
+	_, err = os.Stat(logPath)
+	assert.True(t, os.IsNotExist(err))
+	info, err := os.Stat(logPath + ".1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1*1024*1024+1), info.Size())
+}
+
+func TestRotateLogfile_OverwritesExistingBackup(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+	backupPath := logPath + ".1"
+
+	// claude: create old backup
+	err := os.WriteFile(backupPath, []byte("old-backup-data"), 0644)
+	require.NoError(t, err)
+
+	// claude: create current log over limit
+	data := make([]byte, 2*1024*1024)
+	err = os.WriteFile(logPath, data, 0644)
+	require.NoError(t, err)
+
+	cfg := &Config{Logfile: logPath, MaxLogSize: 1}
+	err = cfg.RotateLogfile()
+	assert.NoError(t, err)
+
+	// claude: backup should now be the rotated file, not the old one
+	info, err := os.Stat(backupPath)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2*1024*1024), info.Size())
+}
+
 func TestConfig_Save_NewFileDefaultsTOML(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldCwd, _ := os.Getwd()

@@ -106,3 +106,15 @@ func TestOsExecutor_SingleElementArray(t *testing.T) {
 	assert.Equal(t, 0, rc)
 	assert.Contains(t, output, "hello")
 }
+
+func TestSanitizeCmdWindows(t *testing.T) {
+	// claude: trailing backslash should get a space appended on Windows
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, `dir c:\`, sanitizeCmdWindows(`dir c:\`), "non-windows should not modify")
+		return
+	}
+	assert.Equal(t, `dir c:\ `, sanitizeCmdWindows(`dir c:\`))
+	assert.Equal(t, `echo hello`, sanitizeCmdWindows(`echo hello`), "no trailing backslash unchanged")
+	assert.Equal(t, `dir c:\users\ `, sanitizeCmdWindows(`dir c:\users\`))
+	assert.Equal(t, `dir "c:\users"`, sanitizeCmdWindows(`dir "c:\users"`), "backslash not at end unchanged")
+}

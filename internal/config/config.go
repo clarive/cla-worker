@@ -32,6 +32,7 @@ type Config struct {
 	Verbose       int            `yaml:"verbose"        toml:"verbose"        mapstructure:"verbose"`
 	Daemon        bool           `yaml:"daemon"         toml:"daemon"         mapstructure:"daemon"`
 	Logfile       string         `yaml:"logfile"        toml:"logfile"        mapstructure:"logfile"`
+	MaxLogSize    int            `yaml:"max_log_size"   toml:"max_log_size"   mapstructure:"max_log_size"`
 	Pidfile       string         `yaml:"pidfile"        toml:"pidfile"        mapstructure:"pidfile"`
 	ChunkSize     int            `yaml:"chunk_size"     toml:"chunk_size"     mapstructure:"chunk_size"`
 	AllowVerbs    []string       `yaml:"allow_verbs"    toml:"allow_verbs"    mapstructure:"allow_verbs"`
@@ -104,13 +105,42 @@ func (c *Config) setDefaults() {
 	if c.ChunkSize == 0 {
 		c.ChunkSize = 64 * 1024
 	}
+	if c.MaxLogSize == 0 {
+		c.MaxLogSize = 20
+	}
 	cwd, _ := os.Getwd()
 	if c.Logfile == "" {
-		c.Logfile = filepath.Join(cwd, "cla-worker.log")
+		if runtime.GOOS == "windows" {
+			c.Logfile = filepath.Join(SystemConfigDir(), "cla-worker.log")
+		} else {
+			c.Logfile = filepath.Join(cwd, "cla-worker.log")
+		}
 	}
 	if c.Pidfile == "" {
 		c.Pidfile = filepath.Join(cwd, "cla-worker.pid")
 	}
+}
+
+// claude: RotateLogfile rotates the logfile if it exceeds MaxLogSize MB.
+// Keeps one backup (.1). No-op if path is empty, file missing, or under limit.
+func (c *Config) RotateLogfile() error {
+	if c.Logfile == "" || c.MaxLogSize <= 0 {
+		return nil
+	}
+	info, err := os.Stat(c.Logfile)
+	if err != nil {
+		return nil
+	}
+	maxBytes := int64(c.MaxLogSize) * 1024 * 1024
+	if info.Size() < maxBytes {
+		return nil
+	}
+	backup := c.Logfile + ".1"
+	os.Remove(backup)
+	if err := os.Rename(c.Logfile, backup); err != nil {
+		return fmt.Errorf("rotating logfile: %w", err)
+	}
+	return nil
 }
 
 func searchPaths(explicit string) []string {

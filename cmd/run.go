@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -68,6 +69,12 @@ func logLevel() slog.Level {
 func runAsService() error {
 	var logger *slog.Logger
 	if cfg.Logfile != "" {
+		if err := cfg.RotateLogfile(); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: log rotation: %v\n", err)
+		}
+		if err := os.MkdirAll(filepath.Dir(cfg.Logfile), 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: creating log directory: %v\n", err)
+		}
 		logFile, err := os.OpenFile(cfg.Logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			return fmt.Errorf("opening log file: %w", err)

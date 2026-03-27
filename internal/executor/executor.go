@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 )
 
 type CommandExecutor interface {
@@ -24,7 +25,7 @@ func (e *OsExecutor) Execute(ctx context.Context, cmd interface{}, chdir string)
 	switch c := cmd.(type) {
 	case string:
 		shell, flag := shellCommand()
-		command = exec.CommandContext(ctx, shell, flag, c)
+		command = exec.CommandContext(ctx, shell, flag, sanitizeCmdWindows(c))
 	case []interface{}:
 		if len(c) == 0 {
 			return "", 1, fmt.Errorf("empty command array")
@@ -35,7 +36,7 @@ func (e *OsExecutor) Execute(ctx context.Context, cmd interface{}, chdir string)
 		}
 		if len(args) == 1 {
 			shell, flag := shellCommand()
-			command = exec.CommandContext(ctx, shell, flag, args[0])
+			command = exec.CommandContext(ctx, shell, flag, sanitizeCmdWindows(args[0]))
 		} else {
 			command = exec.CommandContext(ctx, args[0], args[1:]...)
 		}
@@ -69,4 +70,16 @@ func shellCommand() (string, string) {
 		return "cmd", "/C"
 	}
 	return "/bin/sh", "-c"
+}
+
+// claude: sanitizeCmdWindows works around a cmd.exe /C parsing quirk where
+// a trailing backslash is treated as an escape character for the next
+// character in its internal quote/argument parsing. Appending a space
+// after the trailing backslash prevents cmd.exe from eating the closing
+// quote or delimiter. Example: "dir c:\" fails, "dir c:\ " works.
+func sanitizeCmdWindows(cmd string) string {
+	if runtime.GOOS == "windows" && strings.HasSuffix(cmd, `\`) {
+		return cmd + " "
+	}
+	return cmd
 }

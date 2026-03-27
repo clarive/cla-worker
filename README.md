@@ -89,6 +89,7 @@ url: https://your-clarive-server
 tags:
   - java
   - nodejs
+max_log_size: 20
 ```
 
 ### TOML example (`cla-worker.toml`)
@@ -98,6 +99,7 @@ id = "myworker"
 token = "97d317df5ad3fbb68334657ec94aefe6"
 url = "https://your-clarive-server"
 tags = ["java", "nodejs"]
+max_log_size = 20
 ```
 
 ### Configuration fields
@@ -112,6 +114,7 @@ tags = ["java", "nodejs"]
 | `origin` | Origin identifier (defaults to `user@host/pid`) |
 | `verbose` | Verbosity level: 0 = INFO (default), 1+ = DEBUG |
 | `logfile` | Path to log file (daemon mode) |
+| `max_log_size` | Maximum log file size in MB before rotation (default: 20) |
 | `pidfile` | Path to PID file (daemon mode) |
 | `chunk_size` | File transfer chunk size in bytes (default: 65536) |
 | `registrations` | List of `{id, token, url}` entries for multi-registration setups |
@@ -352,7 +355,21 @@ sc stop cla-worker && sc start cla-worker      # restart
 View logs:
 
 ```powershell
-Get-Content C:\cla-worker\cla-worker.log -Tail 50 -Wait
+Get-Content C:\ProgramData\cla-worker\cla-worker.log -Tail 50 -Wait
+```
+
+**Default log path:** When running as a Windows service, the default log file is
+`C:\ProgramData\cla-worker\cla-worker.log`. The directory is created
+automatically on startup. This avoids writing to `C:\Windows\System32` which is
+the default working directory for Windows services.
+
+**Log rotation:** Log files are automatically rotated when they exceed
+`max_log_size` MB (default: 20). The current log is renamed to
+`cla-worker.log.1` and a new log file is started. Only one backup is kept. To
+change the size limit:
+
+```toml
+max_log_size = 50
 ```
 
 To run under a specific user instead of Local System:

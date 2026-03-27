@@ -2,9 +2,11 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -124,6 +126,12 @@ func (w *Worker) RunDaemon(ctx context.Context) (int, error) {
 	cfg := w.cfg
 
 	if cfg.Logfile != "" {
+		if err := cfg.RotateLogfile(); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: log rotation: %v\n", err)
+		}
+		if err := os.MkdirAll(filepath.Dir(cfg.Logfile), 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: creating log directory: %v\n", err)
+		}
 		logFile, err := os.OpenFile(cfg.Logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			return 1, err
