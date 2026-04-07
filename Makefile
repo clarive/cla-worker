@@ -1,6 +1,7 @@
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  := $(shell git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)
-LDFLAGS := -ldflags "-s -w -X github.com/clarive/cla-worker-go/internal/version.Version=$(VERSION) -X github.com/clarive/cla-worker-go/internal/version.Commit=$(COMMIT)"
+DIRTY   := $(shell git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || echo +$(shell date -u +%Y%m%d%H%M%S))
+LDFLAGS := -ldflags "-s -w -X github.com/clarive/cla-worker-go/internal/version.Version=$(VERSION) -X github.com/clarive/cla-worker-go/internal/version.Commit=$(COMMIT)$(DIRTY)"
 
 .PHONY: build test test-integration test-all bench cover lint cross clean
 
